@@ -63,14 +63,15 @@ function make_p_seasn_fn(month){
   return mo_im; 
 }
 
+//Binary test images
 var pwintr_ic = ee.ImageCollection(wintr_months.map(make_p_seasn_fn));
 var psummr_ic = ee.ImageCollection(summr_months.map(make_p_seasn_fn));
 var pwintr_im = pwintr_ic.reduce(ee.Reducer.sum());
 var psummr_im = psummr_ic.reduce(ee.Reducer.sum());
 var pwintrw_im = pwintr_ic.reduce(ee.Reducer.max());
-var pwintrc_im = pwintr_ic.reduce(ee.Reducer.min());
+var pwintrd_im = pwintr_ic.reduce(ee.Reducer.min());
 var psummrw_im = psummr_ic.reduce(ee.Reducer.max());
-var psummrc_im = psummr_ic.reduce(ee.Reducer.min());
+var psummrd_im = psummr_ic.reduce(ee.Reducer.min());
 
 var test_im = ee.Image(pann_im.multiply(0.70));
 var conA_im = pwintr_im.gte(test_im);
@@ -82,6 +83,22 @@ var pthrA_im = conA_im.where(conA_im, tann_im.multiply(2.0));
 var pthrB_im = conB_im.where(conB_im, ee.Image(tann_im.multiply(2.0)).add(28.0));
 var pthrC_im = conC_im.where(conC_im, ee.Image(tann_im.multiply(2.0)).add(14.0));
 var pthr_im = pthrA_im.add(pthrB_im).add(pthrC_im);
+
+var dry_summrA_im = zero_im.where(psummrd_im.lt(pwintrd_im), 1);
+var dry_summrB_im = zero_im.where(pwintrw_im.gt(psummrd_im.multiply(3.0)), 1);
+var dry_summrC_im = zero_im.where(psummrd_im.lt(40.0), 1);
+var mix_im = dry_summrA_im.add(dry_summrB_im).add(dry_summrC_im);
+var dry_summr_im = mix_im.eq(3.0);
+
+var dry_wintrA_im = zero_im.where(pwintrd_im.lt(psummrd_im), 1);
+var dry_wintrB_im = zero_im.where(psummrw_im.gt(pwintrd_im.multiply(10.0)), 1);
+var mix_im = dry_wintrA_im.add(dry_wintrB_im);
+var dry_wintr_im = mix_im.eq(2.0);
+
+var hot_summr_im = zero_im.where(tw_im.gte(22.0), 1);
+var sin_hot_summr_im = hot_summr_im.eq(0); 
+
+
 
 //E
 var e_im = tw_im.lt(10.0);
@@ -131,9 +148,18 @@ var con_d_im = zero_im.where(tc_im.lte(-3.0), 1);
 var mix_im = sin_e_sin_b_im.add(con_d_im);
 var d_im = mix_im.eq(2.0);
 
+var mix_im = d_im.add(dry_summr_im);
+var ds_im = mix_im.eq(2.0);
+
+var mix_im = d_im.add(dry_wintr_im);
+var dw_im = mix_im.eq(2.0);
+
+var mix_im = d_im.add(ds_im).add(dw_im);
+var df_im = mix_im.eq(1.0);
 
 
-Map.addLayer(e_im, null, 'e_im');
-Map.addLayer(b_im, null, 'b_im');
+
 Map.addLayer(d_im, null, 'd_im');
-
+Map.addLayer(ds_im, null, 'ds_im');
+Map.addLayer(dw_im, null, 'dw_im');
+Map.addLayer(df_im, null, 'df_im');
