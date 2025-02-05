@@ -55,15 +55,16 @@ var tann_im = wt_ic.reduce(ee.Reducer.sum());
 var pann_im = p_ic.reduce(ee.Reducer.sum());
 var tw_im = t_ic.reduce(ee.Reducer.max());
 var tc_im = t_ic.reduce(ee.Reducer.min());
+var pd_im = p_ic.reduce(ee.Reducer.min());
 var zero_im = pann_im.lt(0.0);
 
+//Binary test images, etc.
 function make_p_seasn_fn(month){
   var month = ee.Number(month);
   var mo_im = ee.Image(p_ic.toList(12).get(month.subtract(1)));
   return mo_im; 
 }
 
-//Binary test images, etc.
 var pwintr_ic = ee.ImageCollection(wintr_months.map(make_p_seasn_fn));
 var psummr_ic = ee.ImageCollection(summr_months.map(make_p_seasn_fn));
 var pwintr_im = pwintr_ic.reduce(ee.Reducer.sum());
@@ -72,6 +73,8 @@ var pwintrw_im = pwintr_ic.reduce(ee.Reducer.max());
 var pwintrd_im = pwintr_ic.reduce(ee.Reducer.min());
 var psummrw_im = psummr_ic.reduce(ee.Reducer.max());
 var psummrd_im = psummr_ic.reduce(ee.Reducer.min());
+var pd_in_summr_im = psummrd_im.lt(pwintrd_im);
+var pd_in_wintr_im = pwintrd_im.lt(psummrd_im);
 
 var test_im = ee.Image(pann_im.multiply(0.70));
 var conA_im = pwintr_im.gte(test_im);
@@ -366,8 +369,25 @@ var mix_im = con_a_im.add(sin_b_im);
 var a_im = mix_im.eq(2.0);
 
 //Am
+var con_am_im = zero_im.where(pann_im.gte(ee.Image(ee.Image(pd_im.multiply(-1.0)).add(100.0)).multiply(25.0)), 1);
+var mix_im = con_am_im.add(a_im);
+var am_im = mix_im.eq(2.0);
 
+//Af
+var sin_am_im = con_am_im.eq(0.0);
+var con_af_im = zero_im.where(pd_im.gte(60.0), 1);
+var mix_im = con_af_im.add(sin_am_im).add(a_im);
+var af_im = mix_im.eq(3.0);
 
+//As
+var con_as_im = zero_im.where(pd_im.lt(60.0), 1);
+var mix_im = con_as_im.add(sin_am_im).add(a_im).add(pd_in_summr_im);
+var as_im = mix_im.eq(4.0);
+
+//Aw
+var con_aw_im = zero_im.where(pd_im.lt(60.0), 1);
+var mix_im = con_aw_im.add(sin_am_im).add(a_im).add(pd_in_wintr_im);
+var aw_im = mix_im.eq(4.0);
 
 
 
@@ -376,3 +396,6 @@ Map.addLayer(dsa_im, null, 'dsa_im');
 Map.addLayer(dsb_im, null, 'dsb_im');
 Map.addLayer(dsc_im, null, 'dsc_im');
 Map.addLayer(dsd_im, null, 'dsd_im');
+
+
+
