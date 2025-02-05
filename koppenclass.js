@@ -421,7 +421,6 @@ var et_im = et_im.where(et_im.eq(1.0), 29);
 var ef_im = ef_im.where(ef_im.eq(1.0), 30);
 
 var type_ic = ee.ImageCollection([af_im, am_im, aw_im, bwh_im, bwk_im, bsh_im, bsk_im, csa_im, csb_im, csc_im, cwa_im, cwb_im, cwc_im, cfa_im, cfb_im, cfc_im, dsa_im, dsb_im, dsc_im, dsd_im, dwa_im, dwb_im, dwc_im, dwd_im, dfa_im, dfb_im, dfc_im, dfd_im, et_im, ef_im]);
-//var type_ic = ee.ImageCollection([af_im, bwh_im]);
 
 function change_band_name_fn(im){
   var bLabel = im.bandNames().get(0);
@@ -430,9 +429,47 @@ function change_band_name_fn(im){
 
 var type_ic = ee.ImageCollection(type_ic.map(change_band_name_fn));
 var type_ic = ee.ImageCollection(type_ic.cast({B1:'int64'}, ['B1']));
-
-print(type_ic.size());
 var type_im = type_ic.reduce(ee.Reducer.sum());
-Map.addLayer(type_im);
+
+var typePalette = [
+  '#0000FF', // Af
+  '#0078FF', //Am
+  '#46FAAA', //Aw
+  '#FF0000', //Bwh
+  '#FF9696', //Bwk
+  '#F5A500', //Bsh
+  '#FFDC64', //Bsk
+  '#FFFF00', //Csa
+  '#C8C800', //Csb
+  '#969600', //Csc
+  '#96FF96', //Cwa
+  '#64C864', //Cwb
+  '#329632', //Cwc
+  '#C8FF50', //Cfa
+  '#64FF50', //Cfb
+  '#32C800', //Cfc
+  '#FF00FF', //Dsa
+  '#C800C8', //Dsb
+  '#963296', //Dsc
+  '#966496', //Dsd
+  '#AAAFFF', //Dwa
+  '#5A78DC', //Dwb
+  '#4B50B4', //Dwc
+  '#320087', //Dwd
+  '#00FFFF', //Dfa
+  '#37C8FF', //Dfb
+  '#007D7D', //Dfc
+  '#00465F', //Dfd
+  '#B2B2B2', //Et
+  '#666666' //Ef
+];
+
+var singleBandVis = {
+  min: 1,
+  max: 30,
+  palette: typePalette
+};
+
+Map.addLayer(type_im, singleBandVis);
 
 
