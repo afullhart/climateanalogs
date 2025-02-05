@@ -1,14 +1,13 @@
 var ic = ee.ImageCollection("NASA/NEX-DCP30");
 
 var model = ee.String('CCSM4');
+var start_year = 2000;
+var end_year = 2029;
 
 var ndays_months = ee.List([31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]);
 var order_months = ee.List([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
 var summr_months = ee.List([4, 5, 6, 7, 8, 9]);
 var wintr_months = ee.List([1, 2, 3, 10, 11, 12]);
-
-var start_year = 2000;
-var end_year = 2029;
 
 var modelfilter = ee.Filter.or(
   ee.Filter.eq('scenario', 'historical'),
