@@ -364,7 +364,7 @@ var cfd_im = mix_im.eq(2.0);
 
 //A
 var sin_b_im = b_im.eq(0.0);
-var con_a_im = zero_im.where(tc_im.gte(18.0));
+var con_a_im = zero_im.where(tc_im.gte(18.0), 1);
 var mix_im = con_a_im.add(sin_b_im);
 var a_im = mix_im.eq(2.0);
 
@@ -391,11 +391,48 @@ var aw_im = mix_im.eq(4.0);
 
 
 
-Map.addLayer(ds_im, null, 'ds_im');
-Map.addLayer(dsa_im, null, 'dsa_im');
-Map.addLayer(dsb_im, null, 'dsb_im');
-Map.addLayer(dsc_im, null, 'dsc_im');
-Map.addLayer(dsd_im, null, 'dsd_im');
+//Type value assignments
+var af_im = af_im.where(af_im.eq(1.0), 1);
+var am_im = am_im.where(am_im.eq(1.0), 2);
+//As not present?
+var aw_im = aw_im.where(aw_im.eq(1.0), 3);
+
+var bwh_im = bwh_im.where(bwh_im.eq(1.0), 4);
+var bwk_im = bwk_im.where(bwk_im.eq(1.0), 5);
+var bsh_im = bsh_im.where(bsh_im.eq(1.0), 6);
+var bsk_im = bsk_im.where(bsk_im.eq(1.0), 7);
+
+var csa_im = csa_im.where(csa_im.eq(1.0), 8);
+var csb_im = csb_im.where(csb_im.eq(1.0), 9);
+var csc_im = csc_im.where(csc_im.eq(1.0), 10);
+//csd not present?
+var cwa_im = cwa_im.where(cwa_im.eq(1.0), 11);
+var cwb_im = cwb_im.where(cwb_im.eq(1.0), 12);
+var cwc_im = cwc_im.where(cwc_im.eq(1.0), 13);
+//cwd not present?
+var cfa_im = cfa_im.where(cfa_im.eq(1.0), 14);
+var cfb_im = cfb_im.where(cfb_im.eq(1.0), 15);
+var cfc_im = cfc_im.where(cfc_im.eq(1.0), 16);
+//cfd not present?
+
+var dsa_im = dsa_im.where(dsa_im.eq(1.0), 17);
+var dsb_im = dsb_im.where(dsb_im.eq(1.0), 18);
+var dsc_im = dsc_im.where(dsc_im.eq(1.0), 19);
+var dsd_im = dsd_im.where(dsd_im.eq(1.0), 20);
+
+var dwa_im = dwa_im.where(dwa_im.eq(1.0), 21);
+var dwb_im = dwb_im.where(dwb_im.eq(1.0), 22);
+var dwc_im = dwc_im.where(dwc_im.eq(1.0), 23);
+var dwd_im = dwd_im.where(dwd_im.eq(1.0), 24);
+
+var dfa_im = dfa_im.where(dfa_im.eq(1.0), 25);
+var dfb_im = dfb_im.where(dfb_im.eq(1.0), 26);
+var dfc_im = dfc_im.where(dfc_im.eq(1.0), 27);
+var dfd_im = dfd_im.where(dfd_im.eq(1.0), 28);
+
+var et_im = et_im.where(et_im.eq(1.0), 29);
+var ef_im = ef_im.where(ef_im.eq(1.0), 30);
+
 
 
 
