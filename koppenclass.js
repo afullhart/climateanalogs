@@ -111,6 +111,7 @@ var warm_mo_ct_im = warm_ic.reduce(ee.Reducer.sum());
 var warm_mo_im = warm_mo_ct_im.gte(4);
 
 
+
 //E
 var e_im = tw_im.lt(10.0);
 
@@ -151,7 +152,6 @@ var bwh_im = mix_im.eq(2.0);
 var con_bwk_im = zero_im.where(tann_im.lt(18.0), 1);
 var mix_im = bw_im.add(con_bwk_im);
 var bwk_im = mix_im.eq(2.0);
-
 
 //D
 var mix_im = e_im.add(b_im);
@@ -198,7 +198,6 @@ var con_dsd_im = zero_im.where(tc_im.lte(-38.0), 1);
 var mix_im = con_dsd_im.add(sin_dsa_dsb_im);
 var dsd_im = mix_im.eq(2.0);
 
-
 //Dwa
 var con_dwa = zero_im.where(tw_im.gte(22.0), 1);
 var mix_im = dw_im.add(con_dwa);
@@ -226,7 +225,6 @@ var sin_dwa_dwb_im = mix_im.eq(3.0);
 var con_dwd_im = zero_im.where(tc_im.lte(-38.0), 1);
 var mix_im = con_dwd_im.add(sin_dwa_dwb_im);
 var dwd_im = mix_im.eq(2.0);
-
 
 //Dfa
 var con_dfa = zero_im.where(tw_im.gte(22.0), 1);
@@ -256,8 +254,6 @@ var con_dfd_im = zero_im.where(tc_im.lte(-38.0), 1);
 var mix_im = con_dfd_im.add(sin_dfa_dfb_im);
 var dfd_im = mix_im.eq(2.0);
 
-
-
 //C
 var mix_im = e_im.add(b_im).add(d_im);
 var sin_e_b_d_im = mix_im.eq(0.0);
@@ -274,7 +270,6 @@ var cw_im = mix_im.eq(2.0);
 
 var mix_im = c_im.add(cs_im).add(cw_im);
 var cf_im = mix_im.eq(1.0);
-
 
 //Csa
 var con_csa = zero_im.where(tw_im.gte(22.0), 1);
@@ -304,7 +299,6 @@ var con_csd_im = zero_im.where(tc_im.lte(-38.0), 1);
 var mix_im = con_csd_im.add(sin_csa_csb_im);
 var csd_im = mix_im.eq(2.0);
 
-
 //Cwa
 var con_cwa = zero_im.where(tw_im.gte(22.0), 1);
 var mix_im = cw_im.add(con_cwa);
@@ -332,7 +326,6 @@ var sin_cwa_cwb_im = mix_im.eq(3.0);
 var con_cwd_im = zero_im.where(tc_im.lte(-38.0), 1);
 var mix_im = con_cwd_im.add(sin_cwa_cwb_im);
 var cwd_im = mix_im.eq(2.0);
-
 
 //Cfa
 var con_cfa = zero_im.where(tw_im.gte(22.0), 1);
@@ -419,12 +412,10 @@ var dsa_im = dsa_im.where(dsa_im.eq(1.0), 17);
 var dsb_im = dsb_im.where(dsb_im.eq(1.0), 18);
 var dsc_im = dsc_im.where(dsc_im.eq(1.0), 19);
 var dsd_im = dsd_im.where(dsd_im.eq(1.0), 20);
-
 var dwa_im = dwa_im.where(dwa_im.eq(1.0), 21);
 var dwb_im = dwb_im.where(dwb_im.eq(1.0), 22);
 var dwc_im = dwc_im.where(dwc_im.eq(1.0), 23);
 var dwd_im = dwd_im.where(dwd_im.eq(1.0), 24);
-
 var dfa_im = dfa_im.where(dfa_im.eq(1.0), 25);
 var dfb_im = dfb_im.where(dfb_im.eq(1.0), 26);
 var dfc_im = dfc_im.where(dfc_im.eq(1.0), 27);
@@ -434,6 +425,16 @@ var et_im = et_im.where(et_im.eq(1.0), 29);
 var ef_im = ef_im.where(ef_im.eq(1.0), 30);
 
 var type_ic = ee.ImageCollection([af_im, am_im, aw_im, bwh_im, bwk_im, bsh_im, bsk_im, csa_im, csb_im, csc_im, cwa_im, cwb_im, cwc_im, cfa_im, cfb_im, cfc_im, dsa_im, dsb_im, dsc_im, dsd_im, dwa_im, dwb_im, dwc_im, dwd_im, dfa_im, dfb_im, dfc_im, dfd_im, et_im, ef_im]);
+//var type_ic = ee.ImageCollection([af_im, bwh_im]);
+
+function change_band_name_fn(im){
+  var bLabel = im.bandNames().get(0);
+  return im.select([bLabel],['B1']);
+}
+
+var type_ic = ee.ImageCollection(type_ic.map(change_band_name_fn));
+var type_ic = ee.ImageCollection(type_ic.cast({B1:'int64'}, ['B1']));
+
 print(type_ic.size());
 var type_im = type_ic.reduce(ee.Reducer.sum());
 Map.addLayer(type_im);
