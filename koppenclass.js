@@ -114,11 +114,13 @@ var warm_mo_im = warm_mo_ct_im.gte(4);
 
 //E
 var e_im = tw_im.lt(10.0);
-
+ 
+//Et
 var con_et_im = tw_im.gte(0.0);
 var mix_im = e_im.add(con_et_im);
 var et_im = mix_im.eq(2.0);
 
+//Ef
 var con_ef_im = tw_im.lt(0.0);
 var mix_im = e_im.add(con_ef_im);
 var ef_im = mix_im.eq(2.0);
@@ -128,27 +130,29 @@ var sin_e_im = tw_im.gte(10.0);
 var con_b_im = zero_im.where(pann_im.lt(pthr_im.multiply(10.0)), 1);
 var mix_im = con_b_im.add(sin_e_im);
 var b_im = mix_im.eq(2.0);
-
 var con_bs_im = zero_im.where(pann_im.gt(pthr_im.multiply(5.0)), 1);
 var mix_im = b_im.add(con_bs_im);
 var bs_im = mix_im.eq(2.0);
-
 var con_bw_im = zero_im.where(pann_im.lte(pthr_im.multiply(5.0)), 1);
 var mix_im = b_im.add(con_bw_im);
 var bw_im = mix_im.eq(2.0);
 
+//Bsh
 var con_bsh_im = zero_im.where(tann_im.gte(18.0), 1);
 var mix_im = bs_im.add(con_bsh_im);
 var bsh_im = mix_im.eq(2.0);
 
+//Bsk
 var con_bsk_im = zero_im.where(tann_im.lt(18.0), 1);
 var mix_im = bs_im.add(con_bsk_im);
 var bsk_im = mix_im.eq(2.0);
 
+//Bwh
 var con_bwh_im = zero_im.where(tann_im.gte(18.0), 1);
 var mix_im = bw_im.add(con_bwh_im);
 var bwh_im = mix_im.eq(2.0);
 
+//Bwk
 var con_bwk_im = zero_im.where(tann_im.lt(18.0), 1);
 var mix_im = bw_im.add(con_bwk_im);
 var bwk_im = mix_im.eq(2.0);
@@ -156,17 +160,13 @@ var bwk_im = mix_im.eq(2.0);
 //D
 var mix_im = e_im.add(b_im);
 var sin_e_b_im = mix_im.eq(0.0);
-
 var con_d_im = zero_im.where(tc_im.lte(-3.0), 1);
 var mix_im = sin_e_b_im.add(con_d_im);
 var d_im = mix_im.eq(2.0);
-
 var mix_im = d_im.add(dry_summr_im);
 var ds_im = mix_im.eq(2.0);
-
 var mix_im = d_im.add(dry_wintr_im);
 var dw_im = mix_im.eq(2.0);
-
 var mix_im = d_im.add(ds_im).add(dw_im);
 var df_im = mix_im.eq(1.0);
 
@@ -257,17 +257,13 @@ var dfd_im = mix_im.eq(2.0);
 //C
 var mix_im = e_im.add(b_im).add(d_im);
 var sin_e_b_d_im = mix_im.eq(0.0);
-
 var con_c_im = zero_im.where(tc_im.lt(18.0), 1);
 var mix_im = sin_e_b_d_im.add(con_c_im);
 var c_im = mix_im.eq(2.0);
-
 var mix_im = c_im.add(dry_summr_im);
 var cs_im = mix_im.eq(2.0);
-
 var mix_im = c_im.add(dry_wintr_im);
 var cw_im = mix_im.eq(2.0);
-
 var mix_im = c_im.add(cs_im).add(cw_im);
 var cf_im = mix_im.eq(1.0);
 
