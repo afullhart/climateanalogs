@@ -433,6 +433,9 @@ var dfd_im = dfd_im.where(dfd_im.eq(1.0), 28);
 var et_im = et_im.where(et_im.eq(1.0), 29);
 var ef_im = ef_im.where(ef_im.eq(1.0), 30);
 
-
+var type_ic = ee.ImageCollection([af_im, am_im, aw_im, bwh_im, bwk_im, bsh_im, bsk_im, csa_im, csb_im, csc_im, cwa_im, cwb_im, cwc_im, cfa_im, cfb_im, cfc_im, dsa_im, dsb_im, dsc_im, dsd_im, dwa_im, dwb_im, dwc_im, dwd_im, dfa_im, dfb_im, dfc_im, dfd_im, et_im, ef_im]);
+print(type_ic.size());
+var type_im = type_ic.reduce(ee.Reducer.sum());
+Map.addLayer(type_im);
 
 
