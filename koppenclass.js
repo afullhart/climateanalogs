@@ -24,7 +24,7 @@ function make_p_ic_fn(month){
   var month = ee.Number(month);
   var ndays = ee.Number(ndays_months.get(month.subtract(1)));
   var mo_ic = year_ic.filter(ee.Filter.calendarRange(month, month,'month'));
-  var p_im = mo_ic.select('pr').reduce(ee.Reducer.mean()).multiply(86400).multiply(ndays);
+  var p_im = mo_ic.select('pr').reduce(ee.Reducer.mean()).multiply(86400.0).multiply(ndays);
   return p_im; 
 }
 
@@ -102,7 +102,7 @@ var hot_summr_im = zero_im.where(tw_im.gte(22.0), 1);
 var sin_hot_summr_im = hot_summr_im.eq(0); 
 
 function count_warm_months_fn(t_im){
-  var warm_im = ee.Image(t_im.gte(10));
+  var warm_im = ee.Image(t_im.gte(10.0));
   return warm_im;
 }
 
