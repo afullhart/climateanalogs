@@ -146,8 +146,8 @@ function prediction_fn(imobj){
   return pred_im;
 }
 
-var grass_ic = ee.ImageCollection(clima_ic.map(prediction_fn));
-Map.addLayer(grass_ic.first());
+var grass_prediction_ic = ee.ImageCollection(input_ic.map(prediction_fn));
+Map.addLayer(grass_prediction_ic.first());
 Map.addLayer(merge_ic.first().select('AFG_1'));
 
 
