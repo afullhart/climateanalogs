@@ -119,11 +119,9 @@ Map.addLayer(regr_im);
 
 var n = merge_ic.size();
 var dof = n.subtract(4);
-
 var rmsr = regr_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
 var rss = rmsr.pow(2).multiply(n);
 var sSquared = rss.divide(dof);
-
 var yVariance = merge_ic.select('AFG_1').reduce(ee.Reducer.sampleVariance());
 var rSquareAdj = ee.Image(1).subtract(sSquared.divide(yVariance));
 
