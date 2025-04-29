@@ -1,4 +1,3 @@
-print(geometry.length());
 
 /*
 Band 1 - annual forb and grass
@@ -54,12 +53,17 @@ function yr_fn(yrobj){
   var year = ee.Number(yrobj);
   var start = ee.Date.fromYMD(year, 1, 1);
   var end = ee.Date.fromYMD(year.add(1), 1, 1);
-  var yr_ic = prism_ic.filterDate(start, end).select('ppt');
-  var year_im = yr_ic.reduce(ee.Reducer.sum()).clip(area_shp);
+  var precip_ic = prism_ic.filterDate(start, end).select('ppt');
+  var precip_im = precip_ic.reduce(ee.Reducer.sum()).clip(area_shp);
+  var tmax_ic = prism_ic.filterDate(start, end).select('tmax');
+  var tmax_im = tmax_ic.reduce(ee.Reducer.mean()).clip(area_shp);
+  var tmin_ic = prism_ic.filterDate(start, end).select('tmin');
+  var tmin_im = tmin_ic.reduce(ee.Reducer.mean()).clip(area_shp);
+  var year_im = precip_im.addBands(tmax_im).addBands(tmin_im);
   return year_im;
 }
 
-var precip_ic = ee.ImageCollection(years_list.map(yr_fn));
+var clima_ic = ee.ImageCollection(years_list.map(yr_fn));
 
 
 
@@ -82,12 +86,12 @@ var cover_ic = ee.ImageCollection(years_list.map(clip_fn));
 
 //MERGE STUFF
 
-var precip_ic_list = precip_ic.toList(999);
+var clima_ic_list = clima_ic.toList(999);
 var cover_ic_list = cover_ic.toList(999);
 
 function merge_bands_fn(iobj){
   var i = ee.Number(iobj);
-  var p_im = ee.Image(precip_ic_list.get(i));
+  var p_im = ee.Image(clima_ic_list.get(i));
   var c_im = ee.Image(cover_ic_list.get(i));
   var merge_im = p_im.addBands(c_im);
   var add_im = ee.Image(c_im.select('AFG')).add(ee.Image(c_im.select('PFG')));
@@ -105,21 +109,27 @@ print(merge_ic);
 
 function createConstantBand_fn(image){
   return ee.Image(1).addBands(image);
-};
+}
 
-
-var regr_ic = merge_ic.select(['ppt_sum', 'AFG_1']);
-//var regr_ic = regr_ic.map(createConstantBand_fn);
-//var regr_ic = regr_ic.select(['constant', 'ppt_sum', 'AFG_1']);
-
-var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX: 1, numY: 1}));
+var regr_ic = merge_ic.map(createConstantBand_fn);
+var regr_ic = regr_ic.select(['constant', 'ppt_sum', 'tmax_mean', 'tmin_mean', 'AFG_1']);
+var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX: 4, numY: 1}));
 
 Map.addLayer(regr_im);
 
-var rsqr_im = regr_ic.reduce(ee.Reducer.pearsonsCorrelation());
-print('rsqr im');
-print(rsqr_im);
-Map.addLayer(rsqr_im);
+var n = merge_ic.size();
+var dof = n.subtract(4);
+
+var rmsr = regr_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
+var rss = rmsr.pow(2).multiply(n);
+var sSquared = rss.divide(dof);
+
+var yVariance = merge_ic.select('AFG_1').reduce(ee.Reducer.sampleVariance());
+var rSquareAdj = ee.Image(1).subtract(sSquared.divide(yVariance));
+
+Map.addLayer(rSquareAdj);
+
+
 
 //POINT STUFF
 
@@ -127,13 +137,16 @@ print('POINT STUFF');
 var pt = ee.Geometry.Point(-110, 35);
 Map.addLayer(pt);
 
-var precip_props = precip_ic.getRegion(pt, 9);
-var precip_props = precip_props.slice(1);
-var precip_props = precip_props.getInfo();
-var precip_result = [];
-for (var i = 0; i < precip_props.length; i++) {
-    precip_result.push(precip_props[i][4]);
-}
 
-print(precip_result);
+// var merge_props = merge_ic.getRegion(pt, 9);
+// print('MERGE PROPS');
+// print(merge_props);
+// var merge_props = merge_props.slice(1);
+// var merge_props = merge_props.getInfo();
 
+// var point_result = [];
+// for (var i = 0; i < merge_props.length; i++) {
+//   point_result.push(merge_props[i][9]);
+// }
+
+// print(point_result);
