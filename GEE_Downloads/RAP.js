@@ -21,6 +21,8 @@ var order_months = ee.List([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
 
 var area_shp = ee.Geometry.Rectangle([-121, 30, -102, 43], 'EPSG:4326', false);
 
+var n = years_list.size();
+var dof = n.subtract(4);
 
 var im = rap_ic.first();
 var proj = im.projection().getInfo();
@@ -115,17 +117,38 @@ var regr_ic = merge_ic.map(createConstantBand_fn);
 var regr_ic = regr_ic.select(['constant', 'ppt_sum', 'tmax_mean', 'tmin_mean', 'AFG_1']);
 var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX: 4, numY: 1}));
 
-Map.addLayer(regr_im);
+var rmsr_im = regr_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
+var rss_im = rmsr_im.pow(2).multiply(n);
+var sSquared_im = rss_im.divide(dof);
+var yVariance_im = merge_ic.select('AFG_1').reduce(ee.Reducer.sampleVariance());
+var rSquareAdj_im = ee.Image(1).subtract(sSquared_im.divide(yVariance_im));
+var coeff_im = regr_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2', 'c3', 'c4']]);
+var mlr_im = rmsr_im.addBands(rSquareAdj_im).addBands(coeff_im);
 
-var n = merge_ic.size();
-var dof = n.subtract(4);
-var rmsr = regr_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
-var rss = rmsr.pow(2).multiply(n);
-var sSquared = rss.divide(dof);
-var yVariance = merge_ic.select('AFG_1').reduce(ee.Reducer.sampleVariance());
-var rSquareAdj = ee.Image(1).subtract(sSquared.divide(yVariance));
 
-Map.addLayer(rSquareAdj);
+
+//PREDICTION INPUT IC STUFF
+
+var input_ic = clima_ic;
+
+
+
+//PREDICTION OUTPUT STUFF
+//grass
+
+function prediction_fn(imobj){
+  var cli_im = ee.Image(imobj);
+  var c1 = mlr_im.select('c1');
+  var c2 = cli_im.select('ppt_sum').multiply(mlr_im.select('c2'));
+  var c3 = cli_im.select('tmax_mean').multiply(mlr_im.select('c3'));
+  var c4 = cli_im.select('tmin_mean').multiply(mlr_im.select('c4'));
+  var pred_im = c1.add(c2).add(c3).add(c4);
+  return pred_im;
+}
+
+var grass_ic = ee.ImageCollection(clima_ic.map(prediction_fn));
+Map.addLayer(grass_ic.first());
+Map.addLayer(merge_ic.first().select('AFG_1'));
 
 
 
@@ -134,6 +157,7 @@ Map.addLayer(rSquareAdj);
 print('POINT STUFF');
 var pt = ee.Geometry.Point(-110, 35);
 Map.addLayer(pt);
+
 
 
 // var merge_props = merge_ic.getRegion(pt, 9);
@@ -148,3 +172,5 @@ Map.addLayer(pt);
 // }
 
 // print(point_result);
+
+
