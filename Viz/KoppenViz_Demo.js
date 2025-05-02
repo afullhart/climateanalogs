@@ -2048,5 +2048,3 @@ for (var i = 0; i < typeLabels.length; i++) {
 // Add legend to the map
 Map.add(legend);
 
-Map.addLayer(table, null, 'AZ allotments');
-
