@@ -243,8 +243,7 @@ def main(point):
 
 points = readlist(listFILE)
 spoints = readsearchlist(searchFILE)
-n_workers = 100
-spoints = readsearchlist(searchFILE)    
+n_workers = 100 
 gcm_name = points[0][4]
 gdbDIR = os.path.join(cwd, '{}.gdb'.format(gcm_name))
 
