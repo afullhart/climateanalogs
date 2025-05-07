@@ -14,20 +14,22 @@
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import os
+import shutil
 import pandas as pd
 from classes.Formatting import Formatting
 formatting_obj = Formatting()
 from osgeo import ogr
 from osgeo import gdal
 
-
 cwd = os.getcwd()
-
-parDIR = os.path.join(cwd, 'pars')
+print('cwd')
+print(cwd)
 parnetDIR = os.path.join(cwd, 'parfiles-2015')
+parlistDIR = os.path.join(cwd, 'pars-lists')
+paroutDIR = os.path.join(cwd, 'pars')
 windDIR = os.path.join(cwd, 'wind-strings')
-listFILE = os.path.join(cwd, 'list.txt')
 searchFILE = os.path.join(cwd, 'search_stations.txt')
+
 
 
 def readlist(listFILE):
@@ -47,7 +49,7 @@ def readlist(listFILE):
   return points
 
 def readsearchlist(searchFILE):  
-  with open(os.path.join(cwd, searchFILE)) as f:
+  with open(searchFILE) as f:
     next(f)
     slines = f.readlines()
     spoints = []
@@ -98,7 +100,7 @@ def find_closest_point(lat, lon, spoints):
 
 
 
-def main(point):
+def main(point, gdbDIR, parDIR):
 
   var_labels = ['mean', 'sdev', 'skew', 'pww', 'pwd', 'tmax', 'tmin', 'txsd', 'tnsd', 'srad', 'srsd', 'mx5p', 'tdew', 'timepk']
   historical_var_labels = ['timepk']
@@ -189,7 +191,7 @@ def main(point):
     mx5p.append(('%.2f' %round(float(mx5p_list[mo]), 2)).lstrip('0'))
     dewpt.append('%.2f' %round(float(dewpt_list[mo]), 2))
     timepk.append(('%.3f' %round(float(timepk_list[mo]), 3)).lstrip('0'))
-    
+
   with open(os.path.join(parDIR, fname + '.par'), 'w') as f_out:
   
     title = ' Grid point'
@@ -241,20 +243,31 @@ def main(point):
       f_out.write('---\n')
 
 
-points = readlist(listFILE)
+
+yr_windows = ['1974_2013', '2000_2029', '2010_2039', '2020_2049', '2030_2059', '2040_2069', '2050_2079', '2060_2089', '2070_2099']
+gcm_names = ['CCSM4', 'CanESM2', 'MIROC5']
 spoints = readsearchlist(searchFILE)
-n_workers = 100 
-gcm_name = points[0][4]
-gdbDIR = os.path.join(cwd, '{}.gdb'.format(gcm_name))
 
+
+n_workers = 100
+#pkill -9 python if VS code closes
 if __name__ == '__main__':
-
   with ProcessPoolExecutor(max_workers=n_workers) as executor:
-    pool = {executor.submit(main, p): p for p in points}
-    ct = 0
-    for future in as_completed(pool):
-      res = future.result()
-      ct += 1
-      if ct % 100000 == 0:
-        print(ct)
+    for i in gcm_names:
+      gcm_name = i
+      for j in yr_windows:
+        yr_window = j
+        gdbPATH = os.path.join(cwd, '{}.gdb'.format(gcm_name))
+        os.makedirs(os.path.join(paroutDIR, i + '_' + j), exist_ok=True)
+        parPATH = os.path.join(paroutDIR, i + '_' + j)
+        points = readlist(os.path.join(parlistDIR, i + '_' + j + '_list.txt'))
+        print(i + '_' + j + '_list.txt')
+        pool = {executor.submit(main, p, gdbPATH, parPATH): p for p in points}
+        ct = 0
+        for future in as_completed(pool):
+          res = future.result()
+          ct += 1
+          if ct % 100000 == 0:
+            print(ct)
+
 
