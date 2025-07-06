@@ -14,22 +14,21 @@ import numpy as np
 
 
 cliDIR = '/home/afullhart/Downloads/cligen_53004_Linux'
-parDIR = '/home/afullhart/Downloads/GDBs/RCP45/pars/CCSM4_2000_2029'
+parentparDIR = '/home/afullhart/Downloads/GDBs/RCP45/pars'
 ptFILE = '/home/afullhart/Downloads/Points.csv'
 outDIR = '/home/afullhart/Downloads/GDBs/RCP45/maps'
 
 
-var_labels = ['mean', 'sdev', 'skew', 'pww', 'pwd', 'tmax', 'tmin', 'txsd', 'tnsd', 'srad', 'srsd', 'mx5p', 'tdew', 'timepk']
-historical_var_labels = ['timepk']
+parFolders = [os.path.join(parentparDIR, d) for d in os.listdir(parentparDIR)]
 
-yr_str = '1974_2013'
 n_workers = 100
 REC_LEN = 30
 eo = 0.29; a = 0.72; io = 12.195
 
 trans = (-120.0, 0.0083333333, 0.0, 31.3333333333, 0.0, 0.0083333333)
 spatial_ref = osr.SpatialReference()
-spatial_ref.ImportFromWkt('WGS84')
+spatial_ref.ImportFromEPSG(4326)
+
 driver = gdal.GetDriverByName('GTiff')
 data_type = gdal.GDT_Float32
 
@@ -92,7 +91,6 @@ def make_Zgrid(xyz_df):
     x_idx = np.where(unique_x == x_val)[0][0]
     y_idx = np.where(unique_y == y_val)[0][0]
     Z_grid[y_idx, x_idx] = z_val
-  Z_grid = np.flipud(Z_grid)
   return Z_grid
 
 def make_gtif(Z_grid, tif_f):
@@ -101,20 +99,18 @@ def make_gtif(Z_grid, tif_f):
   mem_raster.SetGeoTransform(trans)
   mem_raster.SetProjection(spatial_ref.ExportToWkt())
   mem_raster.GetRasterBand(1).WriteArray(Z_grid)
-  #will this collide if multiprocessing?
   mem_path = '/vsimem/mem_raster.vrt'
   gdal.Warp(mem_path, mem_raster)
   translate_options = gdal.TranslateOptions(
     format='GTiff', 
-    outputSRS='EPSG:4326', 
-    outputGeotransform=trans,
+    outputSRS='EPSG:4326',
     noData=np.nan
   )
   gdal.Translate(tif_f, mem_path, options=translate_options)
   
 
 
-def main(point):
+def main(point, parDIR):
 
   fname = str(point[0])
   shutil.copyfile(os.path.join(parDIR, fname + '.par'), os.path.join(cliDIR, fname + '.par'))
@@ -164,36 +160,41 @@ def main(point):
 
 
 if __name__ == '__main__':
-  xyz_results = []
-  with ProcessPoolExecutor(max_workers=n_workers) as executor:
-    pool = {executor.submit(main, p): p for p in point_list}
-    ct = 0
-    for future in as_completed(pool):
-      res = future.result()
-      xyz_results.append([res[0], res[1], res[2], res[3]])
-      ct += 1
-      if ct % 100000 == 0:
-        print(ct)
 
-  results_df = pd.DataFrame(xyz_results, columns=['x','y','z1','z2'])
-  results_df.sort_values(by=['y', 'x'], ascending=[True, True], axis=0, inplace=True)
+  for pdir in parFolders:
 
-  ero_df = results_df[['x', 'y', 'z1']]
-  ero_df = ero_df.rename(columns={'x':'x', 'y':'y', 'z1':'z'})
-  Z_grid_ero = make_Zgrid(ero_df)
+    xyz_results = []
+    with ProcessPoolExecutor(max_workers=n_workers) as executor:
+      pool = {executor.submit(main, p, pdir): p for p in point_list}
+      ct = 0
+      for future in as_completed(pool):
+        res = future.result()
+        xyz_results.append([res[0], res[1], res[2], res[3]])
+        ct += 1
+        if ct % 100000 == 0:
+          print(ct)
 
-  
-  swe_df = results_df[['x', 'y', 'z2']]
-  swe_df = swe_df.rename(columns={'x':'x', 'y':'y', 'z2':'z'})
-  Z_grid_swe = make_Zgrid(swe_df)
+    results_df = pd.DataFrame(xyz_results, columns=['x','y','z1','z2'])
+    results_df.sort_values(by=['y', 'x'], ascending=[True, True], axis=0, inplace=True)
 
-  scenario = os.path.split(parDIR)[-1]
+    ero_df = results_df[['x', 'y', 'z1']]
+    ero_df = ero_df.rename(columns={'x':'x', 'y':'y', 'z1':'z'})
+    Z_grid_ero = make_Zgrid(ero_df)
 
-  ero_tif_f = os.path.join(outDIR, scenario + '_ero.tif')
-  swe_tif_f = os.path.join(outDIR, scenario + '_swe.tif')
+    swe_df = results_df[['x', 'y', 'z2']]
+    swe_df = swe_df.rename(columns={'x':'x', 'y':'y', 'z2':'z'})
+    Z_grid_swe = make_Zgrid(swe_df)
 
-  make_gtif(Z_grid_ero, ero_tif_f)
-  make_gtif(Z_grid_swe, swe_tif_f)
+    scenario = os.path.split(pdir)[-1]
 
+    ero_tif_f = os.path.join(outDIR, scenario + '_ero.tif')
+    swe_tif_f = os.path.join(outDIR, scenario + '_swe.tif')
+
+    make_gtif(Z_grid_ero, ero_tif_f)
+    make_gtif(Z_grid_swe, swe_tif_f)
+
+
+
+print('ALL DONE')
 
 
