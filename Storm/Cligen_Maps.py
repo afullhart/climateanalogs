@@ -11,7 +11,7 @@ from osgeo import osr
 from osgeo import gdal
 from scipy import optimize
 import numpy as np
-
+from datetime import datetime
 
 cliDIR = '/home/afullhart/Downloads/cligen_53004_Linux'
 parentparDIR = '/home/afullhart/Downloads/GDBs/RCP45/pars'
@@ -24,6 +24,8 @@ parFolders = [os.path.join(parentparDIR, d) for d in os.listdir(parentparDIR)]
 n_workers = 100
 REC_LEN = 30
 eo = 0.29; a = 0.72; io = 12.195
+
+ndays_ref = [31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
 trans = (-120.0, 0.0083333333, 0.0, 31.3333333333, 0.0, 0.0083333333)
 spatial_ref = osr.SpatialReference()
@@ -59,10 +61,54 @@ def energy(p_, ip_, lp_, b_, eo_, a_, io_,):
   outside = p_*eo_
   return (outside)*((1)-(middle*inside))
 
+def make_dtime(yr, mo, dy):
+  dtime = datetime(yr.astype(int), mo.astype(int), dy.astype(int))
+  return dtime
+
+def daylength(doy, lat):
+  latInRad = np.deg2rad(lat)
+  dec = 23.45*np.sin(np.deg2rad(360.0*(283.0+doy)/365.0))
+  if -np.tan(latInRad) * np.tan(np.deg2rad(dec)) <= -1.0:
+    return 24.0
+  elif -np.tan(latInRad) * np.tan(np.deg2rad(dec)) >= 1.0:
+    return 0.0
+  else:
+    hourAngle = np.rad2deg(np.arccos(-np.tan(latInRad) * np.tan(np.deg2rad(dec))))
+    return 2.0*hourAngle/15.0
+
+
+def thornthwaite(lines, lat):
+  
+  data = []
+  for line in lines:
+    line = line.replace('*****', ' 0.0 ')
+    row = [float(x) for x in line.strip('\n').split()]
+    data.append([row[0], row[1], row[2]+2000, row[3], row[7], row[8]])
+  
+  df = pd.DataFrame(data, columns=['day', 'mo', 'yr', 'precip', 'tmax', 'tmin'])
+  df['dtime'] = df.apply(lambda row: make_dtime(row['yr'], row['mo'], row['day']), axis=1)
+  df['doy'] = df.apply(lambda row: row['dtime'].timetuple().tm_yday, axis=1)
+  df['dayhrs'] = df.apply(lambda row: daylength(row['doy'], lat), axis=1)
+  dyhrs_monthly = df.groupby('mo').mean()['dayhrs']
+  df['tmean'] = (df['tmax'] + df['tmin']) / 2
+  tmean_monthly = df.groupby('mo').mean()['tmean']
+  
+  I = sum([(x/5)**1.514 for x in tmean_monthly])
+  a = (6.75e-7)*I**3 - (7.71e-5)*I**2 + (1.792e-2)*I + 0.49239
+  pet_monthly = []
+  for i in range(12):
+    L = dyhrs_monthly[i]
+    N = ndays_ref[i]
+    Td = tmean_monthly[i]
+    pet_mo = 16*(L/12.0)*(N/30.0)*(10*Td/I)**a 
+    pet_monthly.append(pet_mo)
+  
+  pet = sum(pet_monthly)
+
+  return pet
 
 
 #cd /home/afullhart/Downloads/cligen_53004_Linux && parallel --progress "script -q -c './cligen_53004_Linux -b1 -y30 -t5 -i{} -o{.}.txt' /dev/null > /dev/null 2>&1" ::: *.par
-
 
 
 def run_cligen(lbl):
@@ -118,7 +164,7 @@ def main(point, parDIR):
   run_cligen(fname)
 
   with open(os.path.join(cliDIR, fname + '.txt')) as f:
-    lines = f.readlines()[15:]
+    lines = f.readlines()[15:-1]
   
   os.remove(os.path.join(cliDIR, fname + '.txt'))
   os.remove(os.path.join(cliDIR, fname + '.par'))
@@ -126,8 +172,23 @@ def main(point, parDIR):
   ei_sum = 0.0
   swe_sum = 0.0
   accum = 0.0
-  for line in lines[:-1]:
+  ndays_ct = 0
+  consecutive_ct = 0
+  yr_last = 1
+  consecutive_list = []
+  consecutive_sublist = []
+  for line in lines:
+
     row = line.split()
+    yr = int(row[2])
+    mo = int(row[1])
+
+    if yr != yr_last:
+      consecutive_sublist.append(consecutive_ct)
+      consecutive_list.append(max(consecutive_sublist))
+      consecutive_sublist = []
+      consecutive_ct = 0
+
     if row[3] != '*****':
       p = float(row[3])
       tavg = (float(row[7]) + float(row[8])) / 2.
@@ -152,16 +213,30 @@ def main(point, parDIR):
       if p > 0.0 and tavg <= 5.0:
         swe_sum += p
 
+      if p < 0.3:
+        consecutive_ct += 1
+      else:
+        consecutive_ct = 0
+        ndays_ct += 1
+
+      yr_last = yr
+
+  consecutive_sublist.append(consecutive_ct)
+  consecutive_list.append(max(consecutive_sublist))
+
   ann_ero = ei_sum / REC_LEN
   ann_swe = swe_sum / REC_LEN
+  ann_ndays = float(ndays_ct) / REC_LEN
+  ann_consec = np.mean(consecutive_list)
+  ann_pet = thornthwaite(lines, point[2])
 
-  return([point[1], point[2], ann_ero, ann_swe])
+  return([point[1], point[2], ann_ero, ann_swe, ann_ndays, ann_consec, ann_pet])
 
 
 
 if __name__ == '__main__':
 
-  for pdir in parFolders:
+  for pdir in parFolders[:3]:
 
     xyz_results = []
     with ProcessPoolExecutor(max_workers=n_workers) as executor:
@@ -169,12 +244,12 @@ if __name__ == '__main__':
       ct = 0
       for future in as_completed(pool):
         res = future.result()
-        xyz_results.append([res[0], res[1], res[2], res[3]])
+        xyz_results.append([res[0], res[1], res[2], res[3], res[4], res[5], res[6]])
         ct += 1
         if ct % 100000 == 0:
           print(ct)
 
-    results_df = pd.DataFrame(xyz_results, columns=['x','y','z1','z2'])
+    results_df = pd.DataFrame(xyz_results, columns=['x','y','z1','z2', 'z3', 'z4', 'z5'])
     results_df.sort_values(by=['y', 'x'], ascending=[True, True], axis=0, inplace=True)
 
     ero_df = results_df[['x', 'y', 'z1']]
@@ -185,15 +260,29 @@ if __name__ == '__main__':
     swe_df = swe_df.rename(columns={'x':'x', 'y':'y', 'z2':'z'})
     Z_grid_swe = make_Zgrid(swe_df)
 
+    ndays_df = results_df[['x', 'y', 'z3']]
+    ndays_df = ndays_df.rename(columns={'x':'x', 'y':'y', 'z3':'z'})
+    Z_grid_ndays = make_Zgrid(ndays_df)
+
+    consec_df = results_df[['x', 'y', 'z4']]
+    consec_df = consec_df.rename(columns={'x':'x', 'y':'y', 'z4':'z'})
+    Z_grid_consec = make_Zgrid(consec_df)
+
+    pet_df = results_df[['x', 'y', 'z5']]
+    pet_df = pet_df.rename(columns={'x':'x', 'y':'y', 'z5':'z'})
+    Z_grid_pet = make_Zgrid(pet_df)
+
     scenario = os.path.split(pdir)[-1]
 
     ero_tif_f = os.path.join(outDIR, scenario + '_ero.tif')
     swe_tif_f = os.path.join(outDIR, scenario + '_swe.tif')
+    ndays_tif_f = os.path.join(outDIR, scenario + '_ndays.tif')
+    consec_tif_f = os.path.join(outDIR, scenario + '_consec.tif')
 
     make_gtif(Z_grid_ero, ero_tif_f)
     make_gtif(Z_grid_swe, swe_tif_f)
-
-
+    make_gtif(Z_grid_ndays, ndays_tif_f)
+    make_gtif(Z_grid_consec, consec_tif_f)
 
 print('ALL DONE')
 
