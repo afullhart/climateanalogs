@@ -97,9 +97,9 @@ def thornthwaite(lines, lat):
   a = (6.75e-7)*I**3 - (7.71e-5)*I**2 + (1.792e-2)*I + 0.49239
   pet_monthly = []
   for i in range(12):
-    L = dyhrs_monthly[i]
+    L = dyhrs_monthly[i+1]
     N = ndays_ref[i]
-    Td = tmean_monthly[i]
+    Td = tmean_monthly[i+1]
     pet_mo = 16*(L/12.0)*(N/30.0)*(10*Td/I)**a 
     pet_monthly.append(pet_mo)
   
