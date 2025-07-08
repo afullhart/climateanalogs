@@ -238,7 +238,7 @@ def main(point, parDIR):
 
 if __name__ == '__main__':
 
-  for pdir in parFolders[:3]:
+  for pdir in parFolders:
 
     xyz_results = []
     with ProcessPoolExecutor(max_workers=n_workers) as executor:
