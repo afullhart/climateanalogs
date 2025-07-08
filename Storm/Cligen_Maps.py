@@ -179,6 +179,8 @@ def main(point, parDIR):
   consecutive_sublist = []
   for line in lines:
 
+    line = line.replace('*****', ' 0.0 ')  
+
     row = line.split()
     yr = int(row[2])
     mo = int(row[1])
@@ -189,37 +191,37 @@ def main(point, parDIR):
       consecutive_sublist = []
       consecutive_ct = 0
 
-    if row[3] != '*****':
-      p = float(row[3])
-      tavg = (float(row[7]) + float(row[8])) / 2.
+    p = float(row[3])
+    tavg = (float(row[7]) + float(row[8])) / 2.
 
-      if p >= 12.7 and tavg > 5.0:
-        ip = float(row[6])
-        b = optimize.newton(func=newton, x0=ip, args=(ip,))
-        d = float(row[4])
-        lp = ip * (p/d)
-        if d > 0.5:
-            l30 = i30(p, ip, d, b)
-        else:
-            l30 = 2*p
-        e = energy(p, ip, lp, b, eo, a, io)
-        ei = e*l30
-        ei_sum += ei
-
+    if p >= 12.7 and tavg > 5.0:
+      ip = float(row[6])
+      b = optimize.newton(func=newton, x0=ip, args=(ip,))
+      d = float(row[4])
+      lp = ip * (p/d)
+      if d > 0.5:
+          l30 = i30(p, ip, d, b)
       else:
-        ei = 0.
-        ei_sum += ei
+          l30 = 2*p
+      e = energy(p, ip, lp, b, eo, a, io)
+      ei = e*l30
+      ei_sum += ei
 
-      if p > 0.0 and tavg <= 5.0:
-        swe_sum += p
+    else:
+      ei = 0.
+      ei_sum += ei
 
-      if p < 0.3:
-        consecutive_ct += 1
-      else:
-        consecutive_ct = 0
-        ndays_ct += 1
+    if p > 0.0 and tavg <= 5.0:
+      swe_sum += p
 
-      yr_last = yr
+    if p < 0.3:
+      consecutive_ct += 1
+    else:
+      consecutive_sublist.append(consecutive_ct)
+      consecutive_ct = 0
+      ndays_ct += 1
+
+    yr_last = yr
 
   consecutive_sublist.append(consecutive_ct)
   consecutive_list.append(max(consecutive_sublist))
@@ -236,7 +238,7 @@ def main(point, parDIR):
 
 if __name__ == '__main__':
 
-  for pdir in parFolders:
+  for pdir in parFolders[:3]:
 
     xyz_results = []
     with ProcessPoolExecutor(max_workers=n_workers) as executor:
@@ -278,12 +280,12 @@ if __name__ == '__main__':
     swe_tif_f = os.path.join(outDIR, scenario + '_swe.tif')
     ndays_tif_f = os.path.join(outDIR, scenario + '_ndays.tif')
     consec_tif_f = os.path.join(outDIR, scenario + '_consec.tif')
+    pet_tif_f = os.path.join(outDIR, scenario + '_pet.tif')
 
     make_gtif(Z_grid_ero, ero_tif_f)
     make_gtif(Z_grid_swe, swe_tif_f)
     make_gtif(Z_grid_ndays, ndays_tif_f)
     make_gtif(Z_grid_consec, consec_tif_f)
+    make_gtif(Z_grid_pet, pet_tif_f)
 
 print('ALL DONE')
-
-
