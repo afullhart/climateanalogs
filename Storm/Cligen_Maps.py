@@ -114,6 +114,7 @@ def thornthwaite(lines, lat):
 def run_cligen(lbl):
   output_file = os.path.join(cliDIR, f'{lbl}.txt')
   command = f"""script -q -c 'cd {cliDIR} && ./cligen_53004_Linux -b1 -y{REC_LEN} -t5 -i{lbl}.par -o{lbl}.txt' /dev/null > /dev/null 2>&1"""
+  #command = f"""script -q -c '/home/afullhart/Downloads/cligen_53004_Linux -b1 -y{REC_LEN} -t5 -i{lbl}.par -o{lbl}.txt' /dev/null > /dev/null 2>&1"""
   status = os.system(command)
   if status == 0 and os.path.exists(output_file):
     good = 1
@@ -238,7 +239,7 @@ def main(point, parDIR):
 
 if __name__ == '__main__':
 
-  for pdir in parFolders:
+  for pdir in parFolders[:3]:
 
     xyz_results = []
     with ProcessPoolExecutor(max_workers=n_workers) as executor:
