@@ -11,6 +11,7 @@ var order_months = ee.List([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
 var n = years_list.size();
 var dof = n.subtract(4);
 
+var years_str_list = ['1986', '1987', '1988', '1989', '1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'];
 var cover_bands = ['AFG', 'BGR', 'LTR', 'PFG', 'SHR', 'TRE'];
 var prod_bands = ['afgNPP', 'pfgNPP', 'shrNPP', 'treNPP'];
 var cover_ic = ee.ImageCollection('projects/rap-data-365417/assets/vegetation-cover-v3');
@@ -122,14 +123,27 @@ function main_fn(band, rap_ic, out_im_type){
     return rmsr_im;
   }else if (out_im_type == 'rsqr'){
     return rSquareAdj_im;
+  }else if (out_im_type.slice(0, 3) == 'rap'){
+    var year = ee.Number.parse(out_im_type.slice(3));
+    var year_idx = years_list.indexOf(year);
+    var rap_im = ee.Image(rap_ic_list.get(year_idx));
+    return rap_im;
   }
 }
 
 
+
+///////////////////////
+//USER INTERFACE
+//////
+
+var band_selection = '';
+var ic_selection = '';
+var type_selection = 'rmsr';
+var bandVis = '';
+
 //https://github.com/gee-community/ee-palettes
 var palettes = require('users/gena/packages:palettes');
-
-
 
 var rmsrVis = {
   min:0,
@@ -143,14 +157,18 @@ var rsqrVis = {
   palette:palettes.misc.warmcool[7]
 };
 
+var rapVis = {
+  min:0,
+  max:50,
+  palette:palettes.niccoli.cubicl[7]
+};
+
 var widgetStyle = {
   position:'bottom-center'
 };
 
-var band_selection = '';
-var ic_selection = '';
-var metric_selection = 'rmsr';
-var bandVis = '';
+/////////////////////
+//Change RAP Variable
 
 function renderVariable(var_selection){
   Map.layers().reset();
@@ -160,14 +178,13 @@ function renderVariable(var_selection){
   } else {
     ic_selection = prod_ic;
   }
-  var im_to_show = main_fn(band_selection, ic_selection, metric_selection);
-  if (metric_selection == 'rmsr'){
+  var im_to_show = main_fn(band_selection, ic_selection, type_selection);
+  if (type_selection == 'rmsr'){
     var bandVis = rmsrVis;
-  }else if (metric_selection == 'rsqr'){
+  }else if (type_selection == 'rsqr'){
     var bandVis = rsqrVis;
   }
   Map.addLayer(im_to_show, bandVis, 'rmsr');
-  return null;
 }
 
 var variable_dropdown = ui.Select({
@@ -179,20 +196,19 @@ var variable_dropdown = ui.Select({
 
 ui.root.add(variable_dropdown);
 
-
-
-
+/////////////////////
+//Change Metric Layer
 
 function renderMetric(metric_selection){
   Map.layers().reset();
-  var im_to_show = main_fn(band_selection, ic_selection, metric_selection);
-  if (metric_selection == 'rmsr'){
+  type_selection = metric_selection;
+  var im_to_show = main_fn(band_selection, ic_selection, type_selection);
+  if (type_selection == 'rmsr'){
     var bandVis = rmsrVis;
-  }else if (metric_selection == 'rsqr'){
+  }else if (type_selection == 'rsqr'){
     var bandVis = rsqrVis;
   }
   Map.addLayer(im_to_show, bandVis);
-  return null;
 }
 
 var metric_dropdown = ui.Select({
@@ -204,6 +220,24 @@ var metric_dropdown = ui.Select({
 
 ui.root.add(metric_dropdown);
 
+/////////////////////
+//Render RAP Layer
+
+function renderYear(year_selection){
+  Map.layers().reset();
+  type_selection = 'rap'.concat(year_selection);
+  var im_to_show = main_fn(band_selection, ic_selection, type_selection);
+  Map.addLayer(im_to_show, rapVis);
+}
+
+var year_dropdown = ui.Select({
+  items:years_str_list, 
+  placeholder:'Select RAP Year', 
+  onChange:renderYear,
+  style:widgetStyle
+});
+
+ui.root.add(year_dropdown);
 
 
 
