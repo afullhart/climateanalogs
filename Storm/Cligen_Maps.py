@@ -1,5 +1,5 @@
-#Before running:
-#Check that the CLIGEN directory is empty except for the executable
+#GOTCHA:
+#Check that the CLIGEN directory is empty except for the executable before running
 
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
