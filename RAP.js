@@ -117,33 +117,51 @@ function main_fn(band, rap_ic, out_im_type){
   var rSquareAdj_im = ee.Image(1).subtract(sSquared_im.divide(yVariance_im));
   var coeff_im = regr_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7']]);
   var mlr_im = rmsr_im.addBands(rSquareAdj_im).addBands(coeff_im);
-  
-  
+
+  function prediction_fn(imobj){
+    var cli_im = ee.Image(imobj);
+    var c1 = mlr_im.select('c1');
+    var c2 = cli_im.select('ppt_sum').multiply(mlr_im.select('c2'));
+    var c3 = cli_im.select('tmax_mean').multiply(mlr_im.select('c3'));
+    var c4 = cli_im.select('tmin_mean').multiply(mlr_im.select('c4'));
+    var c5 = cli_im.select('tdmean_mean').multiply(mlr_im.select('c5'));
+    var c6 = cli_im.select('vpdmin_mean').multiply(mlr_im.select('c6'));
+    var c7 = cli_im.select('vpdmax_mean').multiply(mlr_im.select('c7'));
+    var pred_im = c1.add(c2).add(c3).add(c4).add(c5).add(c6).add(c7);
+    return pred_im;
+  }
+
   if (out_im_type == 'rmsr'){
     return rmsr_im;
   }else if (out_im_type == 'rsqr'){
     return rSquareAdj_im;
-  }else if (out_im_type.slice(0, 3) == 'rap'){
+  }else if (out_im_type.slice(0, 3) == 'cov' || out_im_type.slice(0, 3) == 'pro'){
     var year = ee.Number.parse(out_im_type.slice(3));
     var year_idx = years_list.indexOf(year);
     var rap_im = ee.Image(rap_ic_list.get(year_idx));
     return rap_im;
+  }else if (out_im_type == 'OnetoOne'){
+    var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
+    var oneTOone_ic = rap_ic.merge(prediction_ic);
+    return ;
   }
 }
 
 
-
+///////////////////////
 ///////////////////////
 //USER INTERFACE
-//////
+///////////////////////
+///////////////////////
+
+
+//https://github.com/gee-community/ee-palettes
+var palettes = require('users/gena/packages:palettes');
 
 var band_selection = '';
 var ic_selection = '';
 var type_selection = 'rmsr';
-var bandVis = '';
-
-//https://github.com/gee-community/ee-palettes
-var palettes = require('users/gena/packages:palettes');
+var bandVis = palettes.colorbrewer.Paired;
 
 var rmsrVis = {
   min:0,
@@ -157,13 +175,23 @@ var rsqrVis = {
   palette:palettes.misc.warmcool[7]
 };
 
-var rapVis = {
+var covVis = {
   min:0,
   max:50,
   palette:palettes.niccoli.cubicl[7]
 };
 
+var proVis = {
+  min:0,
+  max:100,
+  palette:palettes.niccoli.cubicl[7]
+};
+
 var widgetStyle = {
+  position:'bottom-center'
+};
+
+var checkStyle = {
   position:'bottom-center'
 };
 
@@ -184,7 +212,7 @@ function renderVariable(var_selection){
   }else if (type_selection == 'rsqr'){
     var bandVis = rsqrVis;
   }
-  Map.addLayer(im_to_show, bandVis, 'rmsr');
+  Map.addLayer(im_to_show, bandVis);
 }
 
 var variable_dropdown = ui.Select({
@@ -225,9 +253,18 @@ ui.root.add(metric_dropdown);
 
 function renderYear(year_selection){
   Map.layers().reset();
-  type_selection = 'rap'.concat(year_selection);
+  if (cover_bands.indexOf(band_selection) != -1){
+    type_selection = 'cov'.concat(year_selection);
+  }else if (prod_bands.indexOf(band_selection) != -1){
+    type_selection = 'pro'.concat(year_selection);
+  }
   var im_to_show = main_fn(band_selection, ic_selection, type_selection);
-  Map.addLayer(im_to_show, rapVis);
+  if (type_selection.slice(0, 3) == 'cov'){
+    var bandVis = covVis;
+  }else if (type_selection.slice(0, 3) == 'pro'){
+    var bandVis = proVis;
+  }
+  Map.addLayer(im_to_show, bandVis);
 }
 
 var year_dropdown = ui.Select({
@@ -239,8 +276,55 @@ var year_dropdown = ui.Select({
 
 ui.root.add(year_dropdown);
 
+/////////////////////////
+//Render One-to-One Chart
 
+var timelinePanelStyle = {
+  position:'top-center', 
+  stretch:'vertical',
+  height:'400px',
+  width:'400px',
+  margin:'10px 10px'};
 
+var timelinePanel = ui.Panel({style:timelinePanelStyle});
+
+function clickCallback(clickInfo_obj){
+  timelinePanel = ui.Panel({widgets:[], style:timelinePanelStyle});
+  var lat = clickInfo_obj.lat;
+  var lon = clickInfo_obj.lon;
+  var pt = ee.Geometry.Point([lon, lat]);
+  var datelabel = ui.Label({
+    value:String(lat).concat(String(lon)),
+    style:{
+      padding:'1px',
+      margin:'0px',
+      position:'middle-left',
+      fontSize:'12px'}
+  });
+  var row = ui.Panel({
+    widgets:datelabel,
+    layout:ui.Panel.Layout.Flow('horizontal')
+  });
+  timelinePanel.add(row);
+  ui.root.add(timelinePanel);
+}
+
+function renderOnetoOne(checkbox_bool){
+  if (checkbox_bool === true){
+    Map.onClick(clickCallback);
+  }
+  else{
+    ui.root.remove(timelinePanel);
+  }
+}
+
+var OnetoOne_checkbox = ui.Checkbox({
+  label:'One-to-One Plot on Click',
+  onChange:renderOnetoOne,
+  style:checkStyle
+});
+
+ui.root.add(OnetoOne_checkbox);
 
 
 
