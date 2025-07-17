@@ -1,5 +1,6 @@
 #GOTCHA:
-#Check that the CLIGEN directory is empty except for the executable before running
+#Check that the CLIGEN directory is empty except for the executable before running.
+#The code doesn't overwrite par files with the same name.
 
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
