@@ -156,7 +156,6 @@ def make_gtif(Z_grid, tif_f):
     noData=np.nan
   )
   gdal.Translate(tif_f, mem_path, options=translate_options)
-  print('MADE IT TO GEOTIF FUNCTION!')
 
 
 def main(point, parDIR):
