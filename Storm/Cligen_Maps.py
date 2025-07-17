@@ -238,7 +238,7 @@ def main(point, parDIR):
   return([point[1], point[2], ann_ero, ann_swe, ann_ndays, ann_consec, ann_pet])
 
 
-
+#pkill -9 python if VS code closes
 if __name__ == '__main__':
 
   for pdir in parFolders:
