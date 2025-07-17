@@ -184,8 +184,8 @@ var checkStyle = {
   position:'bottom-center'
 };
 
-var timelinePanelStyle = {
-  position:'top-center', 
+var chartPanelStyle = {
+  position:'bottom-center', 
   stretch:'vertical',
   height:'400px',
   width:'400px',
@@ -198,7 +198,7 @@ var band_selection = 'AFG';
 var ic_selection = cover_ic;
 var type_selection = 'rmsr';
 var bandVis = palettes.colorbrewer.Paired;
-
+var chart_panel = ui.Panel({style:chartPanelStyle});
 var im_to_show = main_fn(band_selection, ic_selection, 'OnetoOne');
 
 /////////////////////
@@ -285,8 +285,6 @@ ui.root.add(year_dropdown);
 /////////////////////////
 //Render One-to-One Chart
 
-var timelinePanel = ui.Panel({style:timelinePanelStyle});
-
 function makePlot(plot_ic, point_geo){
   var plot_ic_list = plot_ic.toList(999);
   var split_ic_size = plot_ic_list.size().divide(2.0);
@@ -294,15 +292,12 @@ function makePlot(plot_ic, point_geo){
   var pred_ic = ee.ImageCollection(plot_ic_list.slice(split_ic_size, plot_ic_list.size()));
   var rap_prop_list = rap_ic.getRegion(point_geo, scale).slice(1);
   var pred_prop_list = pred_ic.getRegion(point_geo, scale).slice(1);
-  
   function get_sublist_fn(props){
     var value = ee.List(props).get(4);
   return value;
   }
-  
   var rap_list = rap_prop_list.map(get_sublist_fn);
   var pred_list = pred_prop_list.map(get_sublist_fn);
-
   var min_value = ee.List([rap_list.reduce(ee.Reducer.min()), pred_list.reduce(ee.Reducer.min())]).reduce(ee.Reducer.min()).getInfo();
   var max_value = ee.List([rap_list.reduce(ee.Reducer.max()), pred_list.reduce(ee.Reducer.max())]).reduce(ee.Reducer.max()).getInfo();
   var oneone_chart = ui.Chart.array.values(pred_list, 0, rap_list)
@@ -311,28 +306,29 @@ function makePlot(plot_ic, point_geo){
     title:'test title',
     titleTextStyle:{italic:false, bold:true, fontSize:26},
     legend:{position:'top-right'},
-    hAxis:{viewWindow:{min:min_value*0.9, max:max_value*1.1}, title:'RAP', titleTextStyle:{italic:false, bold:true, fontSize:21}},
-    vAxis:{viewWindow:{min:min_value*0.9, max:max_value*1.1}, title:'PRED', titleTextStyle:{italic:false, bold:true, fontSize:21}},
+    hAxis:{viewWindow:{min:min_value*0.9, max:max_value*1.1}, title:'RAP', titleTextStyle:{italic:false, bold:true, fontSize:21}, gridlines:{count:6}},
+    vAxis:{viewWindow:{min:min_value*0.9, max:max_value*1.1}, title:'PRED', titleTextStyle:{italic:false, bold:true, fontSize:21}, gridlines:{count:6}},
     colors:['#6a9f58'],
     pointSize:12,
     lineSize:0,
     chartArea:{height:500, width:500},
-    trendlines:{0:{type:'linear', color:'green', lineWidth:3, opacity:0.3, showR2:true, visibleInLegend:true}}
+    trendlines:{0:{type:'linear', color:'green', lineWidth:3, opacity:0.3, visibleInLegend:true}}
   });
   return oneone_chart;
 }
 
 function clickCallback(clickInfo_obj){
+  Map.remove(chart_panel);
   var lat = clickInfo_obj.lat;
   var lon = clickInfo_obj.lon;
   var pt = ee.Geometry.Point([lon, lat]);
   var ic_to_show = main_fn(band_selection, ic_selection, 'OnetoOne');
-  var chartwidget = makePlot(ic_to_show, pt);
-  var chart_panel = ui.Panel({
-    widgets:chartwidget,
+  var chart_widget = makePlot(ic_to_show, pt);
+  chart_panel = ui.Panel({
+    widgets:chart_widget,
     layout:ui.Panel.Layout.Flow('horizontal')
   });
-  ui.root.add(chart_panel);
+  Map.add(chart_panel);
 }
 
 function renderOnetoOne(checkbox_bool){
@@ -340,7 +336,9 @@ function renderOnetoOne(checkbox_bool){
     Map.onClick(clickCallback);
   }
   else{
-    ui.root.remove(timelinePanel);
+    Map.unlisten();
+    Map.remove(chart_panel);
+    chart_panel = ui.Panel({style:chartPanelStyle});
   }
 }
 
