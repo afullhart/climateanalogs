@@ -69,9 +69,7 @@ var clima_ic = ee.ImageCollection(years_list.map(yr_fn));
 
 
 function main_fn(band, rap_ic, out_im_type){
-  
-  //RAP STUFF
-  
+
   function clip_fn(yrobj){
     var year = ee.Number(yrobj);
     var start = ee.Date.fromYMD(year, 1, 1);
@@ -84,9 +82,7 @@ function main_fn(band, rap_ic, out_im_type){
   }
   
   var rap_ic = ee.ImageCollection(years_list.map(clip_fn));
-  
-  //MERGE STUFF
-  
+
   var clima_ic_list = clima_ic.toList(999);
   var rap_ic_list = rap_ic.toList(999);
   
@@ -99,9 +95,7 @@ function main_fn(band, rap_ic, out_im_type){
   }
   
   var merge_ic = ee.ImageCollection(ee.List(yr_idx_list.map(merge_bands_fn)));
-  
-  //CORRELATION STUFF
-  
+
   function createConstantBand_fn(image){
     return ee.Image(1).addBands(image);
   }
@@ -142,8 +136,8 @@ function main_fn(band, rap_ic, out_im_type){
     return rap_im;
   }else if (out_im_type == 'OnetoOne'){
     var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
-    var oneTOone_ic = rap_ic.merge(prediction_ic);
-    return ;
+    var oneone_ic = rap_ic.merge(prediction_ic);
+    return oneone_ic;
   }
 }
 
@@ -157,11 +151,6 @@ function main_fn(band, rap_ic, out_im_type){
 
 //https://github.com/gee-community/ee-palettes
 var palettes = require('users/gena/packages:palettes');
-
-var band_selection = '';
-var ic_selection = '';
-var type_selection = 'rmsr';
-var bandVis = palettes.colorbrewer.Paired;
 
 var rmsrVis = {
   min:0,
@@ -194,6 +183,24 @@ var widgetStyle = {
 var checkStyle = {
   position:'bottom-center'
 };
+
+var timelinePanelStyle = {
+  position:'top-center', 
+  stretch:'vertical',
+  height:'400px',
+  width:'400px',
+  margin:'10px 10px'};
+
+/////////////////////
+//Global widget vars
+
+var band_selection = 'AFG';
+var ic_selection = cover_ic;
+var type_selection = 'rmsr';
+var bandVis = palettes.colorbrewer.Paired;
+
+var im_to_show = main_fn(band_selection, ic_selection, 'OnetoOne');
+print(im_to_show);
 
 /////////////////////
 //Change RAP Variable
@@ -279,20 +286,19 @@ ui.root.add(year_dropdown);
 /////////////////////////
 //Render One-to-One Chart
 
-var timelinePanelStyle = {
-  position:'top-center', 
-  stretch:'vertical',
-  height:'400px',
-  width:'400px',
-  margin:'10px 10px'};
-
 var timelinePanel = ui.Panel({style:timelinePanelStyle});
+
+function makePlot(){
+  
+}
 
 function clickCallback(clickInfo_obj){
   timelinePanel = ui.Panel({widgets:[], style:timelinePanelStyle});
   var lat = clickInfo_obj.lat;
   var lon = clickInfo_obj.lon;
   var pt = ee.Geometry.Point([lon, lat]);
+  var ic_to_show = main_fn(band_selection, ic_selection, 'OnetoOne');
+  //var 
   var datelabel = ui.Label({
     value:String(lat).concat(String(lon)),
     style:{
