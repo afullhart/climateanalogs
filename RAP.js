@@ -9,14 +9,22 @@ var yr_idx_list = ee.List.sequence(0, years_list.length().subtract(1));
 var ndays_months = ee.List([31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]);
 var order_months = ee.List([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
 var n = years_list.size();
-var dof = n.subtract(4);
+var k = ee.Number(6);
+var dof = n.subtract(k).subtract(1);
+
+function make_date_fn(year_num){
+  //var year_num = ee.Number.parse(year_num);
+  var date = ee.Date.fromYMD(year_num, 1, 1);
+  return date;
+}
+var dates_list = ee.List(years_list.map(make_date_fn));
 
 var years_str_list = ['1986', '1987', '1988', '1989', '1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'];
 var cover_bands = ['AFG', 'BGR', 'LTR', 'PFG', 'SHR', 'TRE'];
 var prod_bands = ['afgNPP', 'pfgNPP', 'shrNPP', 'treNPP'];
 var cover_ic = ee.ImageCollection('projects/rap-data-365417/assets/vegetation-cover-v3');
 var prod_ic = ee.ImageCollection('projects/rap-data-365417/assets/npp-partitioned-v3');
-var metric_strs = ['rmsr', 'rsqr'];
+var metric_strs = ['rmsr', 'rsqr', 'pregr'];
 
 
 var im = cover_ic.first();
@@ -103,13 +111,17 @@ function main_fn(band, rap_ic, out_im_type){
   var regr_ic = merge_ic.map(createConstantBand_fn);
   var regr_ic = regr_ic.select(['constant', 'ppt_sum', 'tmax_mean', 'tmin_mean', 'tdmean_mean', 'vpdmin_mean', 'vpdmax_mean', band]);
   var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX: 7, numY: 1}));
-  
   var rmsr_im = regr_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
   var rss_im = rmsr_im.pow(2).multiply(n);
   var sSquared_im = rss_im.divide(dof);
   var yVariance_im = merge_ic.select(band).reduce(ee.Reducer.sampleVariance());
   var rSquareAdj_im = ee.Image(1).subtract(sSquared_im.divide(yVariance_im));
   var coeff_im = regr_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7']]);
+  var msr_im = sSquared_im.divide(k.subtract(1));
+  var mse_im = sSquared_im.divide(dof);
+  var f_im = msr_im.divide(mse_im);
+  
+  //var pregr_im = null;
   var mlr_im = rmsr_im.addBands(rSquareAdj_im).addBands(coeff_im);
 
   function prediction_fn(imobj){
@@ -129,6 +141,8 @@ function main_fn(band, rap_ic, out_im_type){
     return rmsr_im;
   }else if (out_im_type == 'rsqr'){
     return rSquareAdj_im;
+  }else if (out_im_type == 'pregr'){
+    return f_im;
   }else if (out_im_type.slice(0, 3) == 'cov' || out_im_type.slice(0, 3) == 'pro'){
     var year = ee.Number.parse(out_im_type.slice(3));
     var year_idx = years_list.indexOf(year);
@@ -138,6 +152,8 @@ function main_fn(band, rap_ic, out_im_type){
     var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
     var oneone_ic = rap_ic.merge(prediction_ic);
     return oneone_ic;
+  }else if (out_im_type == 'Trend'){
+    return rap_ic;
   }
 }
 
@@ -176,6 +192,13 @@ var proVis = {
   palette:palettes.niccoli.cubicl[7]
 };
 
+var pregrVis = {
+  min:0,
+  max:0.1,
+  palette:palettes.niccoli.cubicl[7]
+};
+
+
 var widgetStyle = {
   position:'bottom-center'
 };
@@ -197,9 +220,10 @@ var chartPanelStyle = {
 var band_selection = 'AFG';
 var ic_selection = cover_ic;
 var type_selection = 'rmsr';
+var im_to_show = main_fn(band_selection, ic_selection, type_selection);
 var bandVis = palettes.colorbrewer.Paired;
-var chart_panel = ui.Panel({style:chartPanelStyle});
-var im_to_show = main_fn(band_selection, ic_selection, 'OnetoOne');
+var chart_panelA = ui.Panel({style:chartPanelStyle});
+var chart_panelB = ui.Panel({style:chartPanelStyle});
 
 /////////////////////
 //Change RAP Variable
@@ -217,6 +241,8 @@ function renderVariable(var_selection){
     var bandVis = rmsrVis;
   }else if (type_selection == 'rsqr'){
     var bandVis = rsqrVis;
+  }else if (type_selection == 'pregr'){
+    var bandVis = pregrVis;
   }
   Map.addLayer(im_to_show, bandVis);
 }
@@ -285,11 +311,10 @@ ui.root.add(year_dropdown);
 /////////////////////////
 //Render One-to-One Chart
 
-function makePlot(plot_ic, point_geo){
+function makePlotA(plot_ic, point_geo){
   var plot_ic_list = plot_ic.toList(999);
-  var split_ic_size = plot_ic_list.size().divide(2.0);
-  var rap_ic = ee.ImageCollection(plot_ic_list.slice(0, split_ic_size));
-  var pred_ic = ee.ImageCollection(plot_ic_list.slice(split_ic_size, plot_ic_list.size()));
+  var rap_ic = ee.ImageCollection(plot_ic_list.slice(0, n));
+  var pred_ic = ee.ImageCollection(plot_ic_list.slice(n, plot_ic_list.size()));
   var rap_prop_list = rap_ic.getRegion(point_geo, scale).slice(1);
   var pred_prop_list = pred_ic.getRegion(point_geo, scale).slice(1);
   function get_sublist_fn(props){
@@ -303,7 +328,7 @@ function makePlot(plot_ic, point_geo){
   var oneone_chart = ui.Chart.array.values(pred_list, 0, rap_list)
   .setSeriesNames(['PredVsRap'])
   .setOptions({
-    title:'test title',
+    title:'One-to-One',
     titleTextStyle:{italic:false, bold:true, fontSize:26},
     legend:{position:'top-right'},
     hAxis:{viewWindow:{min:min_value*0.9, max:max_value*1.1}, title:'RAP', titleTextStyle:{italic:false, bold:true, fontSize:21}, gridlines:{count:6}},
@@ -317,28 +342,28 @@ function makePlot(plot_ic, point_geo){
   return oneone_chart;
 }
 
-function clickCallback(clickInfo_obj){
-  Map.remove(chart_panel);
+function clickCallbackA(clickInfo_obj){
+  Map.remove(chart_panelA);
   var lat = clickInfo_obj.lat;
   var lon = clickInfo_obj.lon;
   var pt = ee.Geometry.Point([lon, lat]);
   var ic_to_show = main_fn(band_selection, ic_selection, 'OnetoOne');
-  var chart_widget = makePlot(ic_to_show, pt);
-  chart_panel = ui.Panel({
+  var chart_widget = makePlotA(ic_to_show, pt);
+  chart_panelA = ui.Panel({
     widgets:chart_widget,
     layout:ui.Panel.Layout.Flow('horizontal')
   });
-  Map.add(chart_panel);
+  Map.add(chart_panelA);
 }
 
 function renderOnetoOne(checkbox_bool){
   if (checkbox_bool === true){
-    Map.onClick(clickCallback);
+    Map.onClick(clickCallbackA);
   }
   else{
     Map.unlisten();
-    Map.remove(chart_panel);
-    chart_panel = ui.Panel({style:chartPanelStyle});
+    Map.remove(chart_panelA);
+    chart_panelA = ui.Panel({style:chartPanelStyle});
   }
 }
 
@@ -350,6 +375,67 @@ var OnetoOne_checkbox = ui.Checkbox({
 
 ui.root.add(OnetoOne_checkbox);
 
+/////////////////////////
+//Render Trend Chart
+
+function makePlotB(rap_ic, point_geo){
+  var rap_prop_list = rap_ic.getRegion(point_geo, scale).slice(1);
+  function get_sublist_fn(props){
+    var value = ee.List(props).get(4);
+  return value;
+  }
+  var rap_list = rap_prop_list.map(get_sublist_fn);
+  var min_value = rap_list.reduce(ee.Reducer.min()).getInfo();
+  var max_value = rap_list.reduce(ee.Reducer.max()).getInfo();
+  var trend_chart = ui.Chart.array.values(rap_list, 0, yr_idx_list)
+  .setSeriesNames(['Rap'])
+  .setOptions({
+    title:'Trend',
+    titleTextStyle:{italic:false, bold:true, fontSize:26},
+    legend:{position:'top-right'},
+    hAxis:{title:'Year', format:'####', titleTextStyle:{italic:false, bold:true, fontSize:21}, gridlines:{count:6}},
+    vAxis:{title:'RAP', titleTextStyle:{italic:false, bold:true, fontSize:21}, gridlines:{count:6}},
+    colors:['#6a9f58'],
+    pointSize:12,
+    lineSize:0,
+    chartArea:{height:500, width:500},
+    trendlines:{0:{type:'linear', color:'green', lineWidth:3, opacity:0.3, visibleInLegend:true}}
+  });
+  return trend_chart;
+}
+
+function clickCallbackB(clickInfo_obj){
+  Map.remove(chart_panelB);
+  var lat = clickInfo_obj.lat;
+  var lon = clickInfo_obj.lon;
+  var pt = ee.Geometry.Point([lon, lat]);
+  var ic_to_show = main_fn(band_selection, ic_selection, 'Trend');
+  var chart_widget = makePlotB(ic_to_show, pt);
+  chart_panelB = ui.Panel({
+    widgets:chart_widget,
+    layout:ui.Panel.Layout.Flow('horizontal')
+  });
+  Map.add(chart_panelB);
+}
+
+function renderTrend(checkbox_bool){
+  if (checkbox_bool === true){
+    Map.onClick(clickCallbackB);
+  }
+  else{
+    Map.unlisten();
+    Map.remove(chart_panelB);
+    chart_panelB = ui.Panel({style:chartPanelStyle});
+  }
+}
+
+var trend_checkbox = ui.Checkbox({
+  label:'RAP Trend on Click',
+  onChange:renderTrend,
+  style:checkStyle
+});
+
+ui.root.add(trend_checkbox);
 
 
 
