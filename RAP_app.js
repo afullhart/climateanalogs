@@ -161,7 +161,7 @@ function main_fn(band, rap_ic, out_im_type){
     return oneone_ic;
   }else if (out_im_type == 'Trend'){
     return rap_ic;
-  }else if (out_im_type == 'Test'){
+  }else if (out_im_type == 'Debug'){
     var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
     return merge_ic, prediction_ic;
   }
@@ -171,7 +171,7 @@ function main_fn(band, rap_ic, out_im_type){
 
 
 //START TesTING TEsTING tEStIng tESTiNG TEsTiNG
-var merge_ic = main_fn('PFG', cover_ic, 'Test');
+var merge_ic = main_fn('PFG', cover_ic, 'Debug');
 var merge_props = merge_ic.getRegion(geometry, scale);
 print('MERGE PROPS');
 print(merge_props);
