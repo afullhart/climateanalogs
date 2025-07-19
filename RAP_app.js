@@ -118,9 +118,9 @@ function main_fn(band, rap_ic, out_im_type){
   var rSquare_im = ee.Image(1).subtract(ee.Image(rss_im.divide(yVariance_im.multiply(n.subtract(1)))));
   var rSquareAdj_im = ee.Image(1).subtract(sSquare_im.divide(yVariance_im));
   var coeff_im = regr_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7']]);
-  var top_im = yVariance_im.divide(k);
-  var bot_im = rss_im.divide(dof);
-  var f_im = yVariance_im; //top_im.divide(bot_im);
+  var top_im = rSquare_im.divide(k);
+  var bot_im = ee.Image(ee.Image(1).subtract(rSquare_im)).divide(n.subtract(k).subtract(1));
+  var f_im = top_im.divide(bot_im);
   
   //var pregr_im = null;
   var mlr_im = rmsr_im.addBands(rSquareAdj_im).addBands(coeff_im);
@@ -528,6 +528,5 @@ var trend_checkbox = ui.Checkbox({
 });
 
 ui.root.add(trend_checkbox);
-
 
 
