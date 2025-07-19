@@ -24,7 +24,7 @@ var cover_bands = ['AFG', 'BGR', 'LTR', 'PFG', 'SHR', 'TRE'];
 var prod_bands = ['afgNPP', 'pfgNPP', 'shrNPP', 'treNPP'];
 var cover_ic = ee.ImageCollection('projects/rap-data-365417/assets/vegetation-cover-v3');
 var prod_ic = ee.ImageCollection('projects/rap-data-365417/assets/npp-partitioned-v3');
-var metric_strs = ['rmsr', 'rsqr', 'pregr'];
+var metric_strs = ['rmsr', 'rsqr', 'rsqrA', 'pregr'];
 
 
 var im = cover_ic.first();
@@ -113,13 +113,14 @@ function main_fn(band, rap_ic, out_im_type){
   var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX: 7, numY: 1}));
   var rmsr_im = regr_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
   var rss_im = rmsr_im.pow(2).multiply(n);
-  var sSquared_im = rss_im.divide(dof);
+  var sSquare_im = rss_im.divide(dof);
   var yVariance_im = merge_ic.select(band).reduce(ee.Reducer.sampleVariance());
-  var rSquareAdj_im = ee.Image(1).subtract(sSquared_im.divide(yVariance_im));
+  var rSquare_im = ee.Image(1).subtract(ee.Image(rss_im.divide(yVariance_im.multiply(n.subtract(1)))));
+  var rSquareAdj_im = ee.Image(1).subtract(sSquare_im.divide(yVariance_im));
   var coeff_im = regr_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7']]);
-  var msr_im = sSquared_im.divide(k.subtract(1));
-  var mse_im = sSquared_im.divide(dof);
-  var f_im = msr_im.divide(mse_im);
+  var top_im = yVariance_im.divide(k);
+  var bot_im = rss_im.divide(dof);
+  var f_im = yVariance_im; //top_im.divide(bot_im);
   
   //var pregr_im = null;
   var mlr_im = rmsr_im.addBands(rSquareAdj_im).addBands(coeff_im);
@@ -140,6 +141,8 @@ function main_fn(band, rap_ic, out_im_type){
   if (out_im_type == 'rmsr'){
     return rmsr_im;
   }else if (out_im_type == 'rsqr'){
+    return rSquare_im;
+  }else if (out_im_type == 'rsqrA'){
     return rSquareAdj_im;
   }else if (out_im_type == 'pregr'){
     return f_im;
@@ -163,21 +166,26 @@ function main_fn(band, rap_ic, out_im_type){
     return rap_ic;
   }else if (out_im_type == 'Debug'){
     var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
-    return merge_ic, prediction_ic;
+    return ee.List([merge_ic, prediction_ic]);
   }
 }
 
 
 
-
 //START TesTING TEsTING tEStIng tESTiNG TEsTiNG
-var merge_ic = main_fn('PFG', cover_ic, 'Debug');
+var merge_ic = ee.ImageCollection(main_fn('PFG', cover_ic, 'Debug').get(0));
+var pred_ic = ee.ImageCollection(main_fn('PFG', cover_ic, 'Debug').get(1));
+
+print(merge_ic);
+print(pred_ic);
 var merge_props = merge_ic.getRegion(geometry, scale);
+var pred_props = pred_ic.getRegion(geometry, scale);
 print('MERGE PROPS');
 print(merge_props);
 var merge_props = merge_props.slice(1);
+var pred_props = pred_props.slice(1);
 
-function make_prop_feats_fn(p_list){
+function make_prop_feats_fnA(p_list){
   var p_list = ee.List(p_list);
   var a = p_list.get(4);
   var b = p_list.get(5);
@@ -190,8 +198,16 @@ function make_prop_feats_fn(p_list){
   return ft;
 }
 
-var out_fc, pred_fc = ee.FeatureCollection(merge_props.map(make_prop_feats_fn));
-print(out_fc);
+var out_fc = ee.FeatureCollection(merge_props.map(make_prop_feats_fnA));
+
+function make_prop_feats_fnB(p_list){
+  var p_list = ee.List(p_list);
+  var a = p_list.get(4);
+  var ft = ee.Feature(null, {a:a});
+  return ft;
+}
+
+var pred_fc = ee.FeatureCollection(pred_props.map(make_prop_feats_fnB));
 
 Export.table.toDrive({
   collection:out_fc,
@@ -203,6 +219,7 @@ Export.table.toDrive({
   description:'vectorsPred'
 });
 //END TesTING TEsTING tEStIng tESTiNG TEsTiNG
+
 
 
 ///////////////////////
@@ -264,7 +281,7 @@ var chartPanelStyle = {
 /////////////////////
 //Global widget vars
 
-var band_selection = 'AFG';
+var band_selection = 'PFG';
 var ic_selection = cover_ic;
 var type_selection = 'rmsr';
 var im_to_show = main_fn(band_selection, ic_selection, type_selection);
@@ -511,9 +528,6 @@ var trend_checkbox = ui.Checkbox({
 });
 
 ui.root.add(trend_checkbox);
-
-
-
 
 
 
