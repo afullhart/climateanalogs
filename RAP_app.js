@@ -148,14 +148,61 @@ function main_fn(band, rap_ic, out_im_type){
     var year_idx = years_list.indexOf(year);
     var rap_im = ee.Image(rap_ic_list.get(year_idx));
     return rap_im;
+  }else if (out_im_type.slice(0, 3) == 'predcov' || out_im_type.slice(0, 3) == 'predpro'){
+    var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
+    var pred_ic_list = prediction_ic.toList(999);
+    var year = ee.Number.parse(out_im_type.slice(7));
+    var year_idx = years_list.indexOf(year);
+    var pred_im = ee.Image(pred_ic_list.get(year_idx));
+    return pred_im;
   }else if (out_im_type == 'OnetoOne'){
     var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
     var oneone_ic = rap_ic.merge(prediction_ic);
     return oneone_ic;
   }else if (out_im_type == 'Trend'){
     return rap_ic;
+  }else if (out_im_type == 'Test'){
+    var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
+    return merge_ic, prediction_ic;
   }
 }
+
+
+
+
+//START TesTING TEsTING tEStIng tESTiNG TEsTiNG
+var merge_ic = main_fn('PFG', cover_ic, 'Test');
+var merge_props = merge_ic.getRegion(geometry, scale);
+print('MERGE PROPS');
+print(merge_props);
+var merge_props = merge_props.slice(1);
+
+function make_prop_feats_fn(p_list){
+  var p_list = ee.List(p_list);
+  var a = p_list.get(4);
+  var b = p_list.get(5);
+  var c = p_list.get(6);
+  var d = p_list.get(7);
+  var e = p_list.get(8);
+  var f = p_list.get(9);
+  var g = p_list.get(10);
+  var ft = ee.Feature(null, {a:a, b:b, c:c, d:d, e:e, f:f, g:g});
+  return ft;
+}
+
+var out_fc, pred_fc = ee.FeatureCollection(merge_props.map(make_prop_feats_fn));
+print(out_fc);
+
+Export.table.toDrive({
+  collection:out_fc,
+  description:'vectorsToDriveExample'
+});
+
+Export.table.toDrive({
+  collection:pred_fc,
+  description:'vectorsPred'
+});
+//END TesTING TEsTING tEStIng tESTiNG TEsTiNG
 
 
 ///////////////////////
@@ -283,7 +330,7 @@ ui.root.add(metric_dropdown);
 /////////////////////
 //Render RAP Layer
 
-function renderYear(year_selection){
+function renderYearA(year_selection){
   Map.layers().reset();
   if (cover_bands.indexOf(band_selection) != -1){
     type_selection = 'cov'.concat(year_selection);
@@ -299,14 +346,42 @@ function renderYear(year_selection){
   Map.addLayer(im_to_show, bandVis);
 }
 
-var year_dropdown = ui.Select({
+var year_dropdownA = ui.Select({
   items:years_str_list, 
   placeholder:'Select RAP Year', 
-  onChange:renderYear,
+  onChange:renderYearA,
   style:widgetStyle
 });
 
-ui.root.add(year_dropdown);
+ui.root.add(year_dropdownA);
+
+////////////////////////
+//Render Predicted Layer
+
+function renderYearB(year_selection){
+  Map.layers().reset();
+  if (cover_bands.indexOf(band_selection) != -1){
+    type_selection = 'predcov'.concat(year_selection);
+  }else if (prod_bands.indexOf(band_selection) != -1){
+    type_selection = 'predpro'.concat(year_selection);
+  }
+  var im_to_show = main_fn(band_selection, ic_selection, type_selection);
+  if (type_selection.slice(0, 7) == 'predcov'){
+    var bandVis = covVis;
+  }else if (type_selection.slice(0, 7) == 'predpro'){
+    var bandVis = proVis;
+  }
+  Map.addLayer(im_to_show, bandVis);
+}
+
+var year_dropdownB = ui.Select({
+  items:years_str_list, 
+  placeholder:'Select PRED. Year', 
+  onChange:renderYearB,
+  style:widgetStyle
+});
+
+ui.root.add(year_dropdownB);
 
 /////////////////////////
 //Render One-to-One Chart
@@ -442,44 +517,3 @@ ui.root.add(trend_checkbox);
 
 
 
-//PREDICTION INPUT IC STUFF
-
-//var input_ic = clima_ic;
-
-// function prediction_fn(imobj){
-//   var cli_im = ee.Image(imobj);
-//   var c1 = mlr_im.select('c1');
-//   var c2 = cli_im.select('ppt_sum').multiply(mlr_im.select('c2'));
-//   var c3 = cli_im.select('tmax_mean').multiply(mlr_im.select('c3'));
-//   var c4 = cli_im.select('tmin_mean').multiply(mlr_im.select('c4'));
-//   var c5 = cli_im.select('tdmean_mean').multiply(mlr_im.select('c5'));
-//   var c6 = cli_im.select('vpdmin_mean').multiply(mlr_im.select('c6'));
-//   var c7 = cli_im.select('vpdmax_mean').multiply(mlr_im.select('c7'));
-//   var pred_im = c1.add(c2).add(c3).add(c4).add(c5).add(c6).add(c7);
-//   return pred_im;
-// }
-
-// var grass_prediction_ic = ee.ImageCollection(input_ic.map(prediction_fn));
-// Map.addLayer(grass_prediction_ic.first(), {min:0, max:70}, 'Grass Prediction');
-// Map.addLayer(merge_ic.first().select(band_selection), {min:0, max:70}, 'merge_ic.first()');
-
-
-//POINT STUFF
-
-// print('POINT STUFF');
-// var pt = ee.Geometry.Point(-110, 35);
-// Map.addLayer(pt, null, 'point');
-
-
-// var merge_props = merge_ic.getRegion(pt, 9);
-// print('MERGE PROPS');
-// print(merge_props);
-// var merge_props = merge_props.slice(1);
-// var merge_props = merge_props.getInfo();
-
-// var point_result = [];
-// for (var i = 0; i < merge_props.length; i++) {
-//   point_result.push(merge_props[i][9]);
-// }
-
-// print(point_result);
