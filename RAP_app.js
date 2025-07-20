@@ -11,6 +11,12 @@ var order_months = ee.List([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
 var n = years_list.size();
 var k = ee.Number(6);
 var dof = n.subtract(k).subtract(1);
+//for F-statistic look-up table
+//n - k = 39 - 6 = 33
+//k - 1 = 6 - 1 = 5
+//1% = 3.630
+//5% = 2.503
+//10% = 2.030
 
 function make_date_fn(year_num){
   //var year_num = ee.Number.parse(year_num);
@@ -24,7 +30,7 @@ var cover_bands = ['AFG', 'BGR', 'LTR', 'PFG', 'SHR', 'TRE'];
 var prod_bands = ['afgNPP', 'pfgNPP', 'shrNPP', 'treNPP'];
 var cover_ic = ee.ImageCollection('projects/rap-data-365417/assets/vegetation-cover-v3');
 var prod_ic = ee.ImageCollection('projects/rap-data-365417/assets/npp-partitioned-v3');
-var metric_strs = ['rmsr', 'rsqr', 'rsqrA', 'pregr'];
+var metric_strs = ['rmsr', 'rsqr', 'rsqrA', 'pconf'];
 
 
 var im = cover_ic.first();
@@ -121,8 +127,11 @@ function main_fn(band, rap_ic, out_im_type){
   var top_im = rSquare_im.divide(k);
   var bot_im = ee.Image(ee.Image(1).subtract(rSquare_im)).divide(n.subtract(k).subtract(1));
   var f_im = top_im.divide(bot_im);
-  
-  //var pregr_im = null;
+  var zero_im = rmsr_im.lt(0.0);
+  var ninenine_im = zero_im.where(f_im.gte(3.630), 1);
+  var ninefive_im = zero_im.where(f_im.gte(2.503), 1);
+  var ninezero_im = zero_im.where(f_im.gte(2.030), 1);
+  var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
   var mlr_im = rmsr_im.addBands(rSquareAdj_im).addBands(coeff_im);
 
   function prediction_fn(imobj){
@@ -144,8 +153,8 @@ function main_fn(band, rap_ic, out_im_type){
     return rSquare_im;
   }else if (out_im_type == 'rsqrA'){
     return rSquareAdj_im;
-  }else if (out_im_type == 'pregr'){
-    return f_im;
+  }else if (out_im_type == 'pconf'){
+    return conf_im;
   }else if (out_im_type.slice(0, 3) == 'cov' || out_im_type.slice(0, 3) == 'pro'){
     var year = ee.Number.parse(out_im_type.slice(3));
     var year_idx = years_list.indexOf(year);
@@ -173,51 +182,51 @@ function main_fn(band, rap_ic, out_im_type){
 
 
 //START TesTING TEsTING tEStIng tESTiNG TEsTiNG
-var merge_ic = ee.ImageCollection(main_fn('PFG', cover_ic, 'Debug').get(0));
-var pred_ic = ee.ImageCollection(main_fn('PFG', cover_ic, 'Debug').get(1));
+// var merge_ic = ee.ImageCollection(main_fn('PFG', cover_ic, 'Debug').get(0));
+// var pred_ic = ee.ImageCollection(main_fn('PFG', cover_ic, 'Debug').get(1));
 
-print(merge_ic);
-print(pred_ic);
-var merge_props = merge_ic.getRegion(geometry, scale);
-var pred_props = pred_ic.getRegion(geometry, scale);
-print('MERGE PROPS');
-print(merge_props);
-var merge_props = merge_props.slice(1);
-var pred_props = pred_props.slice(1);
+// print(merge_ic);
+// print(pred_ic);
+// var merge_props = merge_ic.getRegion(geometry, scale);
+// var pred_props = pred_ic.getRegion(geometry, scale);
+// print('MERGE PROPS');
+// print(merge_props);
+// var merge_props = merge_props.slice(1);
+// var pred_props = pred_props.slice(1);
 
-function make_prop_feats_fnA(p_list){
-  var p_list = ee.List(p_list);
-  var a = p_list.get(4);
-  var b = p_list.get(5);
-  var c = p_list.get(6);
-  var d = p_list.get(7);
-  var e = p_list.get(8);
-  var f = p_list.get(9);
-  var g = p_list.get(10);
-  var ft = ee.Feature(null, {a:a, b:b, c:c, d:d, e:e, f:f, g:g});
-  return ft;
-}
+// function make_prop_feats_fnA(p_list){
+//   var p_list = ee.List(p_list);
+//   var a = p_list.get(4);
+//   var b = p_list.get(5);
+//   var c = p_list.get(6);
+//   var d = p_list.get(7);
+//   var e = p_list.get(8);
+//   var f = p_list.get(9);
+//   var g = p_list.get(10);
+//   var ft = ee.Feature(null, {a:a, b:b, c:c, d:d, e:e, f:f, g:g});
+//   return ft;
+// }
 
-var out_fc = ee.FeatureCollection(merge_props.map(make_prop_feats_fnA));
+// var out_fc = ee.FeatureCollection(merge_props.map(make_prop_feats_fnA));
 
-function make_prop_feats_fnB(p_list){
-  var p_list = ee.List(p_list);
-  var a = p_list.get(4);
-  var ft = ee.Feature(null, {a:a});
-  return ft;
-}
+// function make_prop_feats_fnB(p_list){
+//   var p_list = ee.List(p_list);
+//   var a = p_list.get(4);
+//   var ft = ee.Feature(null, {a:a});
+//   return ft;
+// }
 
-var pred_fc = ee.FeatureCollection(pred_props.map(make_prop_feats_fnB));
+// var pred_fc = ee.FeatureCollection(pred_props.map(make_prop_feats_fnB));
 
-Export.table.toDrive({
-  collection:out_fc,
-  description:'vectorsToDriveExample'
-});
+// Export.table.toDrive({
+//   collection:out_fc,
+//   description:'vectorsToDriveExample'
+// });
 
-Export.table.toDrive({
-  collection:pred_fc,
-  description:'vectorsPred'
-});
+// Export.table.toDrive({
+//   collection:pred_fc,
+//   description:'vectorsPred'
+// });
 //END TesTING TEsTING tEStIng tESTiNG TEsTiNG
 
 
@@ -244,6 +253,13 @@ var rsqrVis = {
   palette:palettes.misc.warmcool[7]
 };
 
+var rsqrAdjVis = {
+  min:0,
+  max:0.33,
+  palette:palettes.misc.warmcool[7]
+};
+
+
 var covVis = {
   min:0,
   max:50,
@@ -256,12 +272,11 @@ var proVis = {
   palette:palettes.niccoli.cubicl[7]
 };
 
-var pregrVis = {
+var confVis = {
   min:0,
-  max:0.1,
-  palette:palettes.niccoli.cubicl[7]
+  max:3,
+  palette:['#FFFFFF', '#d7481d', '#59f720', '#800080']
 };
-
 
 var widgetStyle = {
   position:'bottom-center'
@@ -305,8 +320,10 @@ function renderVariable(var_selection){
     var bandVis = rmsrVis;
   }else if (type_selection == 'rsqr'){
     var bandVis = rsqrVis;
-  }else if (type_selection == 'pregr'){
-    var bandVis = pregrVis;
+  }else if (type_selection == 'rsqrA'){
+    var bandVis = rsqrAdjVis;
+  }else if (type_selection == 'pconf'){
+    var bandVis = confVis;
   }
   Map.addLayer(im_to_show, bandVis);
 }
@@ -331,6 +348,10 @@ function renderMetric(metric_selection){
     var bandVis = rmsrVis;
   }else if (type_selection == 'rsqr'){
     var bandVis = rsqrVis;
+  }else if (type_selection == 'rsqrA'){
+    var bandVis = rsqrAdjVis;
+  }else if (type_selection == 'pconf'){
+    var bandVis = confVis;
   }
   Map.addLayer(im_to_show, bandVis);
 }
@@ -528,5 +549,7 @@ var trend_checkbox = ui.Checkbox({
 });
 
 ui.root.add(trend_checkbox);
+
+
 
 
