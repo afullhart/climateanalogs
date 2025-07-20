@@ -29,6 +29,11 @@ var dof = n.subtract(k).subtract(1);
 //1% = 3.630
 //5% = 2.503
 //10% = 2.030
+//for T-statistic look-up
+//df = n - 1 = 39 - 1 = 38
+//1% = 2.712
+//5% = 2.024
+//10% = 1.686
 
 var im = cover_ic.first();
 var proj = im.projection().getInfo();
@@ -150,6 +155,11 @@ function main_fn(band, rap_ic, out_im_type){
   var sslp_im = top_im.divide(bot_im);
   var coef_im = reg_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2']]);
   var t_im = coef_im.select('c2').divide(sslp_im);
+  var zer_im = rmse_im.lt(0.0);
+  var ninenin_im = zer_im.where(t_im.gte(2.712), 1);
+  var ninefiv_im = zer_im.where(t_im.gte(2.024), 1);
+  var ninezer_im = zer_im.where(t_im.gte(1.686), 1);
+  var con_im = zer_im.add(ninenin_im).add(ninefiv_im).add(ninezer_im);
 
   function prediction_fn(imobj){
     var cli_im = ee.Image(imobj);
@@ -175,7 +185,7 @@ function main_fn(band, rap_ic, out_im_type){
   }else if (out_im_type == 'coeff'){
     return coef_im.select('c2');
   }else if (out_im_type == 'Tconf'){
-    return t_im;
+    return con_im;
   }else if (out_im_type.slice(0, 3) == 'cov' || out_im_type.slice(0, 3) == 'pro'){
     var year = ee.Number.parse(out_im_type.slice(3));
     var year_idx = years_list.indexOf(year);
@@ -581,5 +591,6 @@ var trend_checkbox = ui.Checkbox({
 });
 
 ui.root.add(trend_checkbox);
+
 
 
