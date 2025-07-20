@@ -213,9 +213,9 @@ function main_fn(band, rap_ic, out_im_type){
 
 
 //START TesTING TEsTING tEStIng tESTiNG TEsTiNG
-var t_im = ee.Image(main_fn('PFG', cover_ic, 'Debug').get(0));
-print(t_im);
-Map.addLayer(t_im);
+//var t_im = ee.Image(main_fn('PFG', cover_ic, 'Debug').get(0));
+//print(t_im);
+//Map.addLayer(t_im);
 
 // var merge_props = merge_ic.getRegion(geometry, scale);
 // var pred_props = pred_ic.getRegion(geometry, scale);
@@ -306,10 +306,16 @@ var confVis = {
   palette:['#FFFFFF', '#d7481d', '#59f720', '#800080']
 };
 
-var coeffVis = {
+var covcoeffVis = {
   min:-0.5,
   max:0.5,
   palette:palettes.kovesi.diverging_gkr_60_10_c40[7].reverse()
+};
+
+var procoeffVis = {
+  min:-10,
+  max:10,
+  palette:palettes.kovesi.diverging_gkr_60_10_c40[7]
 };
 
 var widgetStyle = {
@@ -344,7 +350,7 @@ var chart_panelB = ui.Panel({style:chartPanelStyle});
 function renderVariable(var_selection){
   Map.layers().reset();
   band_selection = var_selection;
-  if (cover_bands.indexOf(var_selection) >= 0){
+  if (cover_bands.indexOf(band_selection) >= 0){
     ic_selection = cover_ic;
   } else {
     ic_selection = prod_ic;
@@ -358,8 +364,10 @@ function renderVariable(var_selection){
     var bandVis = rsqrAdjVis;
   }else if (type_selection == 'Fconf'){
     var bandVis = confVis;
-  }else if (type_selection == 'coeff'){
-    var bandVis = coeffVis;
+  }else if (type_selection == 'coeff' && cover_bands.indexOf(band_selection) >= 0){
+    var bandVis = covcoeffVis;
+  }else if (type_selection == 'coeff' && prod_bands.indexOf(band_selection) >= 0){
+    var bandVis = procoeffVis;
   }else if (type_selection == 'Tconf'){
     var bandVis = confVis;
   }
@@ -390,8 +398,10 @@ function renderMetric(metric_selection){
     var bandVis = rsqrAdjVis;
   }else if (type_selection == 'Fconf'){
     var bandVis = confVis;
-  }else if (type_selection == 'coeff'){
-    var bandVis = coeffVis;
+  }else if (type_selection == 'coeff' && cover_bands.indexOf(band_selection) >= 0){
+    var bandVis = covcoeffVis;
+  }else if (type_selection == 'coeff' && prod_bands.indexOf(band_selection) >= 0){
+    var bandVis = procoeffVis;
   }else if (type_selection == 'Tconf'){
     var bandVis = confVis;
   }
