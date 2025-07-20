@@ -18,7 +18,7 @@ var cover_bands = ['AFG', 'BGR', 'LTR', 'PFG', 'SHR', 'TRE'];
 var prod_bands = ['afgNPP', 'pfgNPP', 'shrNPP', 'treNPP'];
 var cover_ic = ee.ImageCollection('projects/rap-data-365417/assets/vegetation-cover-v3');
 var prod_ic = ee.ImageCollection('projects/rap-data-365417/assets/npp-partitioned-v3');
-var metric_strs = ['rmsr', 'rsqr', 'rsqrA', 'Fconf', 'coeff', 'Tconf'];
+var metric_strs = ['rmse', 'rsqr', 'rsqrA', 'Fconf', 'coeff', 'Tconf'];
 
 var n = years_list.size();
 var k = ee.Number(6);
@@ -174,7 +174,7 @@ function main_fn(band, rap_ic, out_im_type){
     return pred_im;
   }
 
-  if (out_im_type == 'rmsr'){
+  if (out_im_type == 'rmse'){
     return rmsr_im;
   }else if (out_im_type == 'rsqr'){
     return rSquare_im;
@@ -269,24 +269,23 @@ function main_fn(band, rap_ic, out_im_type){
 //https://github.com/gee-community/ee-palettes
 var palettes = require('users/gena/packages:palettes');
 
-var rmsrVis = {
+var rmseVis = {
   min:0,
   max:10,
-  palette:palettes.misc.parula[7]
+  palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7]
 };
 
 var rsqrVis = {
   min:0,
-  max:0.67,
-  palette:palettes.misc.warmcool[7]
+  max:0.6,
+  palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7].reverse()
 };
 
 var rsqrAdjVis = {
   min:0,
   max:0.4,
-  palette:palettes.misc.warmcool[7]
+  palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7].reverse()
 };
-
 
 var covVis = {
   min:0,
@@ -338,11 +337,13 @@ var chartPanelStyle = {
 
 var band_selection = 'PFG';
 var ic_selection = cover_ic;
-var type_selection = 'rmsr';
+var type_selection = 'cov2000';
 var im_to_show = main_fn(band_selection, ic_selection, type_selection);
-var bandVis = palettes.colorbrewer.Paired;
+var bandVis = covVis;
 var chart_panelA = ui.Panel({style:chartPanelStyle});
 var chart_panelB = ui.Panel({style:chartPanelStyle});
+
+Map.addLayer(im_to_show, bandVis);
 
 /////////////////////
 //Change RAP Variable
@@ -356,7 +357,7 @@ function renderVariable(var_selection){
     ic_selection = prod_ic;
   }
   var im_to_show = main_fn(band_selection, ic_selection, type_selection);
-  if (type_selection == 'rmsr'){
+  if (type_selection == 'rmse'){
     var bandVis = rmsrVis;
   }else if (type_selection == 'rsqr'){
     var bandVis = rsqrVis;
@@ -390,7 +391,7 @@ function renderMetric(metric_selection){
   Map.layers().reset();
   type_selection = metric_selection;
   var im_to_show = main_fn(band_selection, ic_selection, type_selection);
-  if (type_selection == 'rmsr'){
+  if (type_selection == 'rmse'){
     var bandVis = rmsrVis;
   }else if (type_selection == 'rsqr'){
     var bandVis = rsqrVis;
