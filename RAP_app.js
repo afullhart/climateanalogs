@@ -18,7 +18,7 @@ var cover_bands = ['AFG', 'BGR', 'LTR', 'PFG', 'SHR', 'TRE'];
 var prod_bands = ['afgNPP', 'pfgNPP', 'shrNPP', 'treNPP'];
 var cover_ic = ee.ImageCollection('projects/rap-data-365417/assets/vegetation-cover-v3');
 var prod_ic = ee.ImageCollection('projects/rap-data-365417/assets/npp-partitioned-v3');
-var metric_strs = ['rmsr', 'rsqr', 'rsqrA', 'Fconf', 'coeff'];
+var metric_strs = ['rmsr', 'rsqr', 'rsqrA', 'Fconf', 'coeff', 'Tconf'];
 
 var n = years_list.size();
 var k = ee.Number(6);
@@ -140,12 +140,16 @@ function main_fn(band, rap_ic, out_im_type){
     var merge_im = c_im.addBands(p_im);
     return merge_im;
   }
-  
   var merg_ic = ee.ImageCollection(ee.List(yr_idx_list.map(merg_bands_fn)));
   var reg_ic = merg_ic.map(createConstantBand_fn);
   var reg_ic = reg_ic.select(['constant', 'constant_1', band]);
   var reg_im = reg_ic.reduce(ee.Reducer.linearRegression({numX:2, numY:1}));
+  var rmse_im = reg_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
+  var top_im = ee.Image(rmse_im.pow(2).multiply(n).divide(n.subtract(2))).pow(0.5);
+  var bot_im = reg_ic.select('constant_1').reduce(ee.Reducer.sampleVariance()).multiply(n.subtract(1)).pow(0.5);
+  var sslp_im = top_im.divide(bot_im);
   var coef_im = reg_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2']]);
+  var t_im = coef_im.select('c2').divide(sslp_im);
 
   function prediction_fn(imobj){
     var cli_im = ee.Image(imobj);
@@ -170,6 +174,8 @@ function main_fn(band, rap_ic, out_im_type){
     return conf_im;
   }else if (out_im_type == 'coeff'){
     return coef_im.select('c2');
+  }else if (out_im_type == 'Tconf'){
+    return t_im;
   }else if (out_im_type.slice(0, 3) == 'cov' || out_im_type.slice(0, 3) == 'pro'){
     var year = ee.Number.parse(out_im_type.slice(3));
     var year_idx = years_list.indexOf(year);
@@ -190,22 +196,19 @@ function main_fn(band, rap_ic, out_im_type){
     return rap_ic;
   }else if (out_im_type == 'Debug'){
     var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
-    return ee.List([reg_ic, prediction_ic]);
+    return ee.List([t_im, prediction_ic]);
   }
 }
 
 
 
 //START TesTING TEsTING tEStIng tESTiNG TEsTiNG
-var merge_ic = ee.ImageCollection(main_fn('PFG', cover_ic, 'Debug').get(0));
-// var pred_ic = ee.ImageCollection(main_fn('PFG', cover_ic, 'Debug').get(1));
-print('MERGE_IC');
-print(merge_ic);
-// print(pred_ic);
+var t_im = ee.Image(main_fn('PFG', cover_ic, 'Debug').get(0));
+print(t_im);
+Map.addLayer(t_im);
+
 // var merge_props = merge_ic.getRegion(geometry, scale);
 // var pred_props = pred_ic.getRegion(geometry, scale);
-// print('MERGE PROPS');
-// print(merge_props);
 // var merge_props = merge_props.slice(1);
 // var pred_props = pred_props.slice(1);
 
@@ -294,8 +297,8 @@ var confVis = {
 };
 
 var coeffVis = {
-  min:-1,
-  max:1,
+  min:-0.5,
+  max:0.5,
   palette:palettes.kovesi.diverging_gkr_60_10_c40[7].reverse()
 };
 
@@ -347,6 +350,8 @@ function renderVariable(var_selection){
     var bandVis = confVis;
   }else if (type_selection == 'coeff'){
     var bandVis = coeffVis;
+  }else if (type_selection == 'Tconf'){
+    var bandVis = confVis;
   }
   Map.addLayer(im_to_show, bandVis);
 }
@@ -377,6 +382,8 @@ function renderMetric(metric_selection){
     var bandVis = confVis;
   }else if (type_selection == 'coeff'){
     var bandVis = coeffVis;
+  }else if (type_selection == 'Tconf'){
+    var bandVis = confVis;
   }
   Map.addLayer(im_to_show, bandVis);
 }
