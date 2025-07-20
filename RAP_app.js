@@ -8,6 +8,18 @@ var years_list = ee.List.sequence(1986, 2024);
 var yr_idx_list = ee.List.sequence(0, years_list.length().subtract(1));
 var ndays_months = ee.List([31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]);
 var order_months = ee.List([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+function make_date_fn(year_num){
+  var date = ee.Date.fromYMD(year_num, 1, 1);
+  return date;
+}
+var dates_list = ee.List(years_list.map(make_date_fn));
+var years_str_list = ['1986', '1987', '1988', '1989', '1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'];
+var cover_bands = ['AFG', 'BGR', 'LTR', 'PFG', 'SHR', 'TRE'];
+var prod_bands = ['afgNPP', 'pfgNPP', 'shrNPP', 'treNPP'];
+var cover_ic = ee.ImageCollection('projects/rap-data-365417/assets/vegetation-cover-v3');
+var prod_ic = ee.ImageCollection('projects/rap-data-365417/assets/npp-partitioned-v3');
+var metric_strs = ['rmsr', 'rsqr', 'rsqrA', 'Fconf', 'coeff'];
+
 var n = years_list.size();
 var k = ee.Number(6);
 var dof = n.subtract(k).subtract(1);
@@ -17,21 +29,6 @@ var dof = n.subtract(k).subtract(1);
 //1% = 3.630
 //5% = 2.503
 //10% = 2.030
-
-function make_date_fn(year_num){
-  //var year_num = ee.Number.parse(year_num);
-  var date = ee.Date.fromYMD(year_num, 1, 1);
-  return date;
-}
-var dates_list = ee.List(years_list.map(make_date_fn));
-
-var years_str_list = ['1986', '1987', '1988', '1989', '1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'];
-var cover_bands = ['AFG', 'BGR', 'LTR', 'PFG', 'SHR', 'TRE'];
-var prod_bands = ['afgNPP', 'pfgNPP', 'shrNPP', 'treNPP'];
-var cover_ic = ee.ImageCollection('projects/rap-data-365417/assets/vegetation-cover-v3');
-var prod_ic = ee.ImageCollection('projects/rap-data-365417/assets/npp-partitioned-v3');
-var metric_strs = ['rmsr', 'rsqr', 'rsqrA', 'pconf'];
-
 
 var im = cover_ic.first();
 var proj = im.projection().getInfo();
@@ -114,9 +111,10 @@ function main_fn(band, rap_ic, out_im_type){
     return ee.Image(1).addBands(image);
   }
   
+  //Climate model statistics
   var regr_ic = merge_ic.map(createConstantBand_fn);
   var regr_ic = regr_ic.select(['constant', 'ppt_sum', 'tmax_mean', 'tmin_mean', 'tdmean_mean', 'vpdmin_mean', 'vpdmax_mean', band]);
-  var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX: 7, numY: 1}));
+  var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:7, numY:1}));
   var rmsr_im = regr_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
   var rss_im = rmsr_im.pow(2).multiply(n);
   var sSquare_im = rss_im.divide(dof);
@@ -133,6 +131,21 @@ function main_fn(band, rap_ic, out_im_type){
   var ninezero_im = zero_im.where(f_im.gte(2.030), 1);
   var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
   var mlr_im = rmsr_im.addBands(rSquareAdj_im).addBands(coeff_im);
+
+  //Trend model statistics
+  function merg_bands_fn(iobj){
+    var i = ee.Number(iobj);
+    var p_im = ee.Image.constant(yr_idx_list.get(i)).toFloat();
+    var c_im = ee.Image(rap_ic_list.get(i));
+    var merge_im = c_im.addBands(p_im);
+    return merge_im;
+  }
+  
+  var merg_ic = ee.ImageCollection(ee.List(yr_idx_list.map(merg_bands_fn)));
+  var reg_ic = merg_ic.map(createConstantBand_fn);
+  var reg_ic = reg_ic.select(['constant', 'constant_1', band]);
+  var reg_im = reg_ic.reduce(ee.Reducer.linearRegression({numX:2, numY:1}));
+  var coef_im = reg_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2']]);
 
   function prediction_fn(imobj){
     var cli_im = ee.Image(imobj);
@@ -153,8 +166,10 @@ function main_fn(band, rap_ic, out_im_type){
     return rSquare_im;
   }else if (out_im_type == 'rsqrA'){
     return rSquareAdj_im;
-  }else if (out_im_type == 'pconf'){
+  }else if (out_im_type == 'Fconf'){
     return conf_im;
+  }else if (out_im_type == 'coeff'){
+    return coef_im.select('c2');
   }else if (out_im_type.slice(0, 3) == 'cov' || out_im_type.slice(0, 3) == 'pro'){
     var year = ee.Number.parse(out_im_type.slice(3));
     var year_idx = years_list.indexOf(year);
@@ -175,17 +190,17 @@ function main_fn(band, rap_ic, out_im_type){
     return rap_ic;
   }else if (out_im_type == 'Debug'){
     var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
-    return ee.List([merge_ic, prediction_ic]);
+    return ee.List([reg_ic, prediction_ic]);
   }
 }
 
 
 
 //START TesTING TEsTING tEStIng tESTiNG TEsTiNG
-// var merge_ic = ee.ImageCollection(main_fn('PFG', cover_ic, 'Debug').get(0));
+var merge_ic = ee.ImageCollection(main_fn('PFG', cover_ic, 'Debug').get(0));
 // var pred_ic = ee.ImageCollection(main_fn('PFG', cover_ic, 'Debug').get(1));
-
-// print(merge_ic);
+print('MERGE_IC');
+print(merge_ic);
 // print(pred_ic);
 // var merge_props = merge_ic.getRegion(geometry, scale);
 // var pred_props = pred_ic.getRegion(geometry, scale);
@@ -255,7 +270,7 @@ var rsqrVis = {
 
 var rsqrAdjVis = {
   min:0,
-  max:0.33,
+  max:0.4,
   palette:palettes.misc.warmcool[7]
 };
 
@@ -276,6 +291,12 @@ var confVis = {
   min:0,
   max:3,
   palette:['#FFFFFF', '#d7481d', '#59f720', '#800080']
+};
+
+var coeffVis = {
+  min:-1,
+  max:1,
+  palette:palettes.kovesi.diverging_gkr_60_10_c40[7].reverse()
 };
 
 var widgetStyle = {
@@ -322,8 +343,10 @@ function renderVariable(var_selection){
     var bandVis = rsqrVis;
   }else if (type_selection == 'rsqrA'){
     var bandVis = rsqrAdjVis;
-  }else if (type_selection == 'pconf'){
+  }else if (type_selection == 'Fconf'){
     var bandVis = confVis;
+  }else if (type_selection == 'coeff'){
+    var bandVis = coeffVis;
   }
   Map.addLayer(im_to_show, bandVis);
 }
@@ -350,8 +373,10 @@ function renderMetric(metric_selection){
     var bandVis = rsqrVis;
   }else if (type_selection == 'rsqrA'){
     var bandVis = rsqrAdjVis;
-  }else if (type_selection == 'pconf'){
+  }else if (type_selection == 'Fconf'){
     var bandVis = confVis;
+  }else if (type_selection == 'coeff'){
+    var bandVis = coeffVis;
   }
   Map.addLayer(im_to_show, bandVis);
 }
@@ -549,7 +574,5 @@ var trend_checkbox = ui.Checkbox({
 });
 
 ui.root.add(trend_checkbox);
-
-
 
 
