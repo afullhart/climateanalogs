@@ -191,7 +191,7 @@ function main_fn(band, rap_ic, out_im_type){
     var year_idx = years_list.indexOf(year);
     var rap_im = ee.Image(rap_ic_list.get(year_idx));
     return rap_im;
-  }else if (out_im_type.slice(0, 3) == 'predcov' || out_im_type.slice(0, 3) == 'predpro'){
+  }else if (out_im_type.slice(0, 3) == 'covpred' || out_im_type.slice(0, 3) == 'propred'){
     var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
     var pred_ic_list = prediction_ic.toList(999);
     var year = ee.Number.parse(out_im_type.slice(7));
@@ -269,9 +269,15 @@ function main_fn(band, rap_ic, out_im_type){
 //https://github.com/gee-community/ee-palettes
 var palettes = require('users/gena/packages:palettes');
 
-var rmseVis = {
+var rmseCovVis = {
   min:0,
-  max:10,
+  max:5,
+  palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7]
+};
+
+var rmseProVis = {
+  min:0,
+  max:100,
   palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7]
 };
 
@@ -295,7 +301,7 @@ var covVis = {
 
 var proVis = {
   min:0,
-  max:100,
+  max:800,
   palette:palettes.niccoli.cubicl[7]
 };
 
@@ -353,12 +359,24 @@ function renderVariable(var_selection){
   band_selection = var_selection;
   if (cover_bands.indexOf(band_selection) >= 0){
     ic_selection = cover_ic;
+    var bandVis = covVis;
+    if (type_selection.slice(0, 3) == 'pro'){
+      var year = type_selection.slice(-4);
+      type_selection = type_selection.replace('pro', 'cov').slice(0, -4).concat(year);
+    }    
   } else {
     ic_selection = prod_ic;
+    var bandVis = proVis;
+    if (type_selection.slice(0, 3) == 'cov'){
+      var year = type_selection.slice(-4);
+      type_selection = type_selection.replace('cov', 'pro').slice(0, -4).concat(year);
+    }
   }
   var im_to_show = main_fn(band_selection, ic_selection, type_selection);
-  if (type_selection == 'rmse'){
-    var bandVis = rmsrVis;
+  if (type_selection == 'rmse' && cover_bands.indexOf(band_selection) >= 0){
+    var bandVis = rmseCovVis;
+  }else if (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0){
+    var bandVis = rmseProVis;
   }else if (type_selection == 'rsqr'){
     var bandVis = rsqrVis;
   }else if (type_selection == 'rsqrA'){
@@ -371,6 +389,14 @@ function renderVariable(var_selection){
     var bandVis = procoeffVis;
   }else if (type_selection == 'Tconf'){
     var bandVis = confVis;
+  }else if (type_selection.slice(0, 3) == 'cov'){
+    var bandVis = covVis;
+  }else if (type_selection.slice(0, 3) == 'pro'){
+    var bandVis = proVis;
+  }else if (type_selection.slice(0, 7) == 'covpred'){
+    var bandVis = covVis;
+  }else if (type_selection.slice(0, 7) == 'propred'){
+    var bandVis = proVis;
   }
   Map.addLayer(im_to_show, bandVis);
 }
@@ -391,8 +417,10 @@ function renderMetric(metric_selection){
   Map.layers().reset();
   type_selection = metric_selection;
   var im_to_show = main_fn(band_selection, ic_selection, type_selection);
-  if (type_selection == 'rmse'){
-    var bandVis = rmsrVis;
+  if (type_selection == 'rmse' && cover_bands.indexOf(band_selection) >= 0){
+    var bandVis = rmseCovVis;
+  }else if (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0){
+    var bandVis = rmseProVis;
   }else if (type_selection == 'rsqr'){
     var bandVis = rsqrVis;
   }else if (type_selection == 'rsqrA'){
@@ -602,6 +630,5 @@ var trend_checkbox = ui.Checkbox({
 });
 
 ui.root.add(trend_checkbox);
-
 
 
