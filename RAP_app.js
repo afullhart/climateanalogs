@@ -352,7 +352,6 @@ var legend_panel = ui.Panel({
   style:{position:'bottom-left', padding:'8px 15px'}
 });
 
-
 /////////////////////
 //Global widget vars
 
