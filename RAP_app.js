@@ -350,6 +350,11 @@ var main_panel = ui.Panel({
   style: {width: '300px'}
 });
 
+var legend_panel = ui.Panel({
+  style:{position:'bottom-left', padding:'8px 15px'}
+});
+
+
 /////////////////////
 //Global widget vars
 
@@ -363,6 +368,48 @@ var chart_panelB = ui.Panel({style:chartPanelStyle});
 
 Map.addLayer(im_to_show, bandVis);
 
+///////////////////////
+//Legend making funcion
+
+function makeLegend(){
+  //Source: https://mygeoblog.com/2017/03/02/creating-a-gradient-legend/
+  Map.remove(legend_panel);
+  legend_panel.clear();
+
+  legend_panel = ui.Panel({
+    style:{position:'bottom-left', padding:'8px 15px'}
+  });
+
+  var legendTitle2 = ui.Label({
+    value:'Legend 2 (?)',
+    style:{fontWeight:'bold', fontSize:'16px', margin:'0 0 4px 0', padding:'0'}
+  });
+
+  var panel = ui.Panel({
+    widgets:[ui.Label(bandVis['max'])]
+  });
+  
+  var lat = ee.Image.pixelLonLat().select('latitude');
+  var gradient = lat.multiply((bandVis['max']-bandVis['min'])/100.0).add(bandVis['min']);
+  var legendImage = gradient.visualize(bandVis);
+
+  var thumbnail = ui.Thumbnail({
+    image:legendImage,
+    params:{bbox:'0,0,10,100', dimensions:'10x200'}, 
+    style:{position:'bottom-center', stretch:'vertical', margin:'0px 8px', maxHeight:'200px'}
+  });
+
+  var panel2 = ui.Panel({
+    widgets:[ui.Label(bandVis['min'])]
+  });
+
+  legend_panel.add(legendTitle2);
+  legend_panel.add(panel);
+  legend_panel.add(thumbnail);
+  legend_panel.add(panel2);
+  Map.add(legend_panel);
+}
+
 /////////////////////
 //Change RAP Variable
 
@@ -371,14 +418,14 @@ function renderVariable(var_selection){
   band_selection = var_selection;
   if (cover_bands.indexOf(band_selection) >= 0){
     ic_selection = cover_ic;
-    var bandVis = covVis;
+    bandVis = covVis;
     if (type_selection.slice(0, 3) == 'pro'){
       var year = type_selection.slice(-4);
       type_selection = type_selection.replace('pro', 'cov').slice(0, -4).concat(year);
     }    
   } else {
     ic_selection = prod_ic;
-    var bandVis = proVis;
+    bandVis = proVis;
     if (type_selection.slice(0, 3) == 'cov'){
       var year = type_selection.slice(-4);
       type_selection = type_selection.replace('cov', 'pro').slice(0, -4).concat(year);
@@ -386,31 +433,32 @@ function renderVariable(var_selection){
   }
   var im_to_show = main_fn(band_selection, ic_selection, type_selection);
   if (type_selection == 'rmse' && cover_bands.indexOf(band_selection) >= 0){
-    var bandVis = rmseCovVis;
+    bandVis = rmseCovVis;
   }else if (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0){
-    var bandVis = rmseProVis;
+    bandVis = rmseProVis;
   }else if (type_selection == 'rsqr'){
-    var bandVis = rsqrVis;
+    bandVis = rsqrVis;
   }else if (type_selection == 'rsqrA'){
-    var bandVis = rsqrAdjVis;
+    bandVis = rsqrAdjVis;
   }else if (type_selection == 'Fconf'){
-    var bandVis = confVis;
+    bandVis = confVis;
   }else if (type_selection == 'coeff' && cover_bands.indexOf(band_selection) >= 0){
-    var bandVis = covcoeffVis;
+    bandVis = covcoeffVis;
   }else if (type_selection == 'coeff' && prod_bands.indexOf(band_selection) >= 0){
-    var bandVis = procoeffVis;
+    bandVis = procoeffVis;
   }else if (type_selection == 'Tconf'){
-    var bandVis = confVis;
+    bandVis = confVis;
   }else if (type_selection.slice(0, 3) == 'cov'){
-    var bandVis = covVis;
+    bandVis = covVis;
   }else if (type_selection.slice(0, 3) == 'pro'){
-    var bandVis = proVis;
+    bandVis = proVis;
   }else if (type_selection.slice(0, 7) == 'covpred'){
-    var bandVis = covVis;
+    bandVis = covVis;
   }else if (type_selection.slice(0, 7) == 'propred'){
-    var bandVis = proVis;
+    bandVis = proVis;
   }
   Map.addLayer(im_to_show, bandVis);
+  makeLegend();
 }
 
 var variable_dropdown = ui.Select({
@@ -430,23 +478,24 @@ function renderMetric(metric_selection){
   type_selection = metric_selection;
   var im_to_show = main_fn(band_selection, ic_selection, type_selection);
   if (type_selection == 'rmse' && cover_bands.indexOf(band_selection) >= 0){
-    var bandVis = rmseCovVis;
+    bandVis = rmseCovVis;
   }else if (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0){
-    var bandVis = rmseProVis;
+    bandVis = rmseProVis;
   }else if (type_selection == 'rsqr'){
-    var bandVis = rsqrVis;
+    bandVis = rsqrVis;
   }else if (type_selection == 'rsqrA'){
-    var bandVis = rsqrAdjVis;
+    bandVis = rsqrAdjVis;
   }else if (type_selection == 'Fconf'){
-    var bandVis = confVis;
+    bandVis = confVis;
   }else if (type_selection == 'coeff' && cover_bands.indexOf(band_selection) >= 0){
-    var bandVis = covcoeffVis;
+    bandVis = covcoeffVis;
   }else if (type_selection == 'coeff' && prod_bands.indexOf(band_selection) >= 0){
-    var bandVis = procoeffVis;
+    bandVis = procoeffVis;
   }else if (type_selection == 'Tconf'){
-    var bandVis = confVis;
+    bandVis = confVis;
   }
   Map.addLayer(im_to_show, bandVis);
+  makeLegend();
 }
 
 var metric_dropdown = ui.Select({
@@ -470,11 +519,12 @@ function renderYearA(year_selection){
   }
   var im_to_show = main_fn(band_selection, ic_selection, type_selection);
   if (type_selection.slice(0, 3) == 'cov'){
-    var bandVis = covVis;
+    bandVis = covVis;
   }else if (type_selection.slice(0, 3) == 'pro'){
-    var bandVis = proVis;
+    bandVis = proVis;
   }
   Map.addLayer(im_to_show, bandVis);
+  makeLegend();
 }
 
 var year_dropdownA = ui.Select({
@@ -498,11 +548,12 @@ function renderYearB(year_selection){
   }
   var im_to_show = main_fn(band_selection, ic_selection, type_selection);
   if (type_selection.slice(0, 7) == 'predcov'){
-    var bandVis = covVis;
+    bandVis = covVis;
   }else if (type_selection.slice(0, 7) == 'predpro'){
-    var bandVis = proVis;
+    bandVis = proVis;
   }
   Map.addLayer(im_to_show, bandVis);
+  makeLegend();
 }
 
 var year_dropdownB = ui.Select({
@@ -644,7 +695,4 @@ var trend_checkbox = ui.Checkbox({
 main_panel.add(trend_checkbox);
 
 ui.root.add(main_panel);
-
-
-
 
