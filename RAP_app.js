@@ -275,7 +275,7 @@ var rmseCovVis = {
 var palettes = require('users/gena/packages:palettes');
 var rmseProVis = {
   min:0,
-  max:100,
+  max:200,
   palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7]
 };
 
@@ -289,7 +289,7 @@ var rsqrVis = {
 var palettes = require('users/gena/packages:palettes');
 var rsqrAdjVis = {
   min:0,
-  max:0.4,
+  max:0.3,
   palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7].reverse()
 };
 
@@ -307,24 +307,24 @@ var proVis = {
   palette:palettes.niccoli.cubicl[7]
 };
 
-var confVis = {
-  min:0,
-  max:3,
-  palette:['#FFFFFF', '#d7481d', '#59f720', '#800080']
-};
-
 var palettes = require('users/gena/packages:palettes');
 var covcoeffVis = {
-  min:-0.5,
-  max:0.5,
-  palette:palettes.kovesi.diverging_gkr_60_10_c40[7].reverse()
+  min:-0.2,
+  max:0.2,
+  palette:palettes.colorbrewer.BrBG[7]
 };
 
 var palettes = require('users/gena/packages:palettes');
 var procoeffVis = {
-  min:-10,
-  max:10,
-  palette:palettes.kovesi.diverging_gkr_60_10_c40[7]
+  min:-5,
+  max:5,
+  palette:palettes.colorbrewer.BrBG[7]
+};
+
+var confVis = {
+  min:0,
+  max:3,
+  palette:['#FFFFFF', '#d7481d', '#59f720', '#800080']
 };
 
 var widgetStyle = {
@@ -365,25 +365,39 @@ var chart_panelB = ui.Panel({style:chartPanelStyle});
 
 Map.addLayer(im_to_show, bandVis);
 
-///////////////////////
-//Legend making funcion
+/////////////////
+//Legend funcion
 
 function makeLegend(){
-  //Source: https://mygeoblog.com/2017/03/02/creating-a-gradient-legend/
+
   Map.remove(legend_panel);
   legend_panel.clear();
+  
+  if (type_selection == 'Fconf' || type_selection == 'Tconf'){
+    var pos = 'middle-left';
+  }else{
+    var pos = 'bottom-left';
+  }
 
   legend_panel = ui.Panel({
-    style:{position:'bottom-left', padding:'8px 15px'}
+    style:{position:pos, padding:'8px 15px'}
   });
 
-  var legendTitle2 = ui.Label({
-    value:'Legend 2 (?)',
+  if ((type_selection.slice(0, 3) == 'cov') || (type_selection == 'rmse' && cover_bands.indexOf(band_selection) >= 0)){
+    var lTitle = 'frac. %';
+  }else if ((type_selection.slice(0, 3) == 'pro') || (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0)){
+    var lTitle = 'lbs/acre';
+  }else{
+    var lTitle = ' (-)';
+  }
+
+  var legendTitle = ui.Label({
+    value:lTitle,
     style:{fontWeight:'bold', fontSize:'16px', margin:'0 0 4px 0', padding:'0'}
   });
 
   var panel = ui.Panel({
-    widgets:[ui.Label(bandVis['max'])]
+    widgets:[ui.Label(String(bandVis['max']).concat('+'))]
   });
   
   var lat = ee.Image.pixelLonLat().select('latitude');
@@ -400,10 +414,47 @@ function makeLegend(){
     widgets:[ui.Label(bandVis['min'])]
   });
 
-  legend_panel.add(legendTitle2);
-  legend_panel.add(panel);
-  legend_panel.add(thumbnail);
-  legend_panel.add(panel2);
+  if (type_selection == 'Fconf' || type_selection == 'Tconf'){
+
+    var typeLabels = ['<90% conf.', '>=90% conf.', '>=95% conf.', '>=99% conf.'];
+  
+    for (var i = 0; i < [0, 1, 2, 3].length; i++){
+      var colorBox = ui.Label({
+        style: {
+          backgroundColor:bandVis.palette[i],
+          padding:'6px',
+          margin:'0px',
+          border:'1px solid black',
+          fontSize:'10px'
+        }
+      });
+    
+      var label = ui.Label({
+        value:typeLabels[i],
+        style:{
+          padding:'1px',
+          margin:'0px',
+          position:'middle-left',
+          fontSize:'12px'
+        }
+      });
+    
+      var row = ui.Panel({
+        widgets:[colorBox, label],
+        layout:ui.Panel.Layout.Flow('horizontal')
+      });
+    
+      legend_panel.add(row);
+    }
+  }
+  
+  if (type_selection != 'Fconf' && type_selection != 'Tconf'){
+    legend_panel.add(legendTitle);
+    legend_panel.add(panel);
+    legend_panel.add(thumbnail);
+    legend_panel.add(panel2);
+  }
+
   Map.add(legend_panel);
 }
 
@@ -420,7 +471,7 @@ function renderVariable(var_selection){
       var year = type_selection.slice(-4);
       type_selection = type_selection.replace('pro', 'cov').slice(0, -4).concat(year);
     }    
-  } else {
+  }else{
     ic_selection = prod_ic;
     bandVis = proVis;
     if (type_selection.slice(0, 3) == 'cov'){
