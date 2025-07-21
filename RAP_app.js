@@ -422,7 +422,7 @@ function makeLegend(){
       var colorBox = ui.Label({
         style: {
           backgroundColor:bandVis.palette[i],
-          padding:'6px',
+          padding:'10px',
           margin:'0px',
           border:'1px solid black',
           fontSize:'10px'
@@ -432,7 +432,7 @@ function makeLegend(){
       var label = ui.Label({
         value:typeLabels[i],
         style:{
-          padding:'1px',
+          padding:'6px',
           margin:'0px',
           position:'middle-left',
           fontSize:'12px'
