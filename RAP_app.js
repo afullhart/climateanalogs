@@ -211,8 +211,7 @@ function main_fn(band, rap_ic, out_im_type){
 }
 
 
-
-//START TesTING TEsTING tEStIng tESTiNG TEsTiNG
+//START DeBugGing TEsTING deBUggiNg tESTiNG TEsTiNG
 //var t_im = ee.Image(main_fn('PFG', cover_ic, 'Debug').get(0));
 //print(t_im);
 //Map.addLayer(t_im);
@@ -255,8 +254,7 @@ function main_fn(band, rap_ic, out_im_type){
 //   collection:pred_fc,
 //   description:'vectorsPred'
 // });
-//END TesTING TEsTING tEStIng tESTiNG TEsTiNG
-
+//END DeBugGing TEsTING dEbuGgINg tESTiNG TEsTiNG
 
 
 ///////////////////////
@@ -695,4 +693,5 @@ var trend_checkbox = ui.Checkbox({
 main_panel.add(trend_checkbox);
 
 ui.root.add(main_panel);
+
 
