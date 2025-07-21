@@ -268,37 +268,41 @@ function main_fn(band, rap_ic, out_im_type){
 
 //https://github.com/gee-community/ee-palettes
 var palettes = require('users/gena/packages:palettes');
-
 var rmseCovVis = {
   min:0,
   max:5,
   palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7]
 };
 
+var palettes = require('users/gena/packages:palettes');
 var rmseProVis = {
   min:0,
   max:100,
   palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7]
 };
 
+var palettes = require('users/gena/packages:palettes');
 var rsqrVis = {
   min:0,
   max:0.6,
   palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7].reverse()
 };
 
+var palettes = require('users/gena/packages:palettes');
 var rsqrAdjVis = {
   min:0,
   max:0.4,
   palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7].reverse()
 };
 
+var palettes = require('users/gena/packages:palettes');
 var covVis = {
   min:0,
   max:50,
   palette:palettes.niccoli.cubicl[7]
 };
 
+var palettes = require('users/gena/packages:palettes');
 var proVis = {
   min:0,
   max:800,
@@ -311,12 +315,14 @@ var confVis = {
   palette:['#FFFFFF', '#d7481d', '#59f720', '#800080']
 };
 
+var palettes = require('users/gena/packages:palettes');
 var covcoeffVis = {
   min:-0.5,
   max:0.5,
   palette:palettes.kovesi.diverging_gkr_60_10_c40[7].reverse()
 };
 
+var palettes = require('users/gena/packages:palettes');
 var procoeffVis = {
   min:-10,
   max:10,
@@ -337,6 +343,12 @@ var chartPanelStyle = {
   height:'400px',
   width:'400px',
   margin:'10px 10px'};
+
+//ui.root.setLayout(ui.Panel.Layout.absolute());
+var main_panel = ui.Panel({
+  layout:ui.Panel.Layout.flow('vertical'),
+  style: {width: '300px'}
+});
 
 /////////////////////
 //Global widget vars
@@ -408,7 +420,7 @@ var variable_dropdown = ui.Select({
   style:widgetStyle
 });
 
-ui.root.add(variable_dropdown);
+main_panel.add(variable_dropdown);
 
 /////////////////////
 //Change Metric Layer
@@ -444,7 +456,7 @@ var metric_dropdown = ui.Select({
   style:widgetStyle
 });
 
-ui.root.add(metric_dropdown);
+main_panel.add(metric_dropdown);
 
 /////////////////////
 //Render RAP Layer
@@ -472,7 +484,7 @@ var year_dropdownA = ui.Select({
   style:widgetStyle
 });
 
-ui.root.add(year_dropdownA);
+main_panel.add(year_dropdownA);
 
 ////////////////////////
 //Render Predicted Layer
@@ -500,7 +512,7 @@ var year_dropdownB = ui.Select({
   style:widgetStyle
 });
 
-ui.root.add(year_dropdownB);
+main_panel.add(year_dropdownB);
 
 /////////////////////////
 //Render One-to-One Chart
@@ -567,7 +579,7 @@ var OnetoOne_checkbox = ui.Checkbox({
   style:checkStyle
 });
 
-ui.root.add(OnetoOne_checkbox);
+main_panel.add(OnetoOne_checkbox);
 
 /////////////////////////
 //Render Trend Chart
@@ -629,6 +641,10 @@ var trend_checkbox = ui.Checkbox({
   style:checkStyle
 });
 
-ui.root.add(trend_checkbox);
+main_panel.add(trend_checkbox);
+
+ui.root.add(main_panel);
+
+
 
 
