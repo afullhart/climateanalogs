@@ -18,6 +18,7 @@ var cover_bands = ['AFG', 'BGR', 'LTR', 'PFG', 'SHR', 'TRE'];
 var prod_bands = ['afgNPP', 'pfgNPP', 'shrNPP', 'treNPP'];
 var cover_ic = ee.ImageCollection('projects/rap-data-365417/assets/vegetation-cover-v3');
 var prod_ic = ee.ImageCollection('projects/rap-data-365417/assets/npp-partitioned-v3');
+var mat_ic = ee.ImageCollection("projects/rap-data-365417/assets/gridmet-MAT");
 var metric_strs = ['rmse', 'rsqr', 'rsqrA', 'Fconf', 'coeff', 'Tconf'];
 
 var n = years_list.size();
@@ -98,6 +99,23 @@ function main_fn(band, rap_ic, out_im_type){
   }
   
   var rap_ic = ee.ImageCollection(years_list.map(clip_fn));
+
+  function npp2biomass_fn(im){
+    var year = ee.Date(im.get('system:time_start')).format('YYYY');
+    var matYear = mat_ic.filterDate(year).first();
+    var fANPP = (matYear.multiply(0.0129)).add(0.171).rename('fANPP');
+    var agb_im = im.multiply(0.0001) // NPP scalar 
+      .multiply(2.20462) // KgC to lbsC
+      .multiply(4046.86) // m2 to acres
+      .multiply(fANPP)  // fraction of NPP aboveground
+      .multiply(2.1276) // C to biomass
+      .rename(['afgAGB', 'pfgAGB'])
+      .copyProperties(im, ['system:time_start'])
+      .set('year', year);
+    return agb_im;
+  };
+
+  var rap_ic = ee.ImageCollection(years_list.map(npp22biomass_fn));
 
   var clima_ic_list = clima_ic.toList(999);
   var rap_ic_list = rap_ic.toList(999);
@@ -186,18 +204,18 @@ function main_fn(band, rap_ic, out_im_type){
     return coef_im.select('c2');
   }else if (out_im_type == 'Tconf'){
     return con_im;
-  }else if (out_im_type.slice(0, 3) == 'cov' || out_im_type.slice(0, 3) == 'pro'){
-    var year = ee.Number.parse(out_im_type.slice(3));
-    var year_idx = years_list.indexOf(year);
-    var rap_im = ee.Image(rap_ic_list.get(year_idx));
-    return rap_im;
-  }else if (out_im_type.slice(0, 3) == 'covpred' || out_im_type.slice(0, 3) == 'propred'){
+  }else if (out_im_type.slice(0, 7) == 'covpred' || out_im_type.slice(0, 7) == 'propred'){
     var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
     var pred_ic_list = prediction_ic.toList(999);
     var year = ee.Number.parse(out_im_type.slice(7));
     var year_idx = years_list.indexOf(year);
     var pred_im = ee.Image(pred_ic_list.get(year_idx));
     return pred_im;
+  }else if (out_im_type.slice(0, 3) == 'cov' || out_im_type.slice(0, 3) == 'pro'){
+    var year = ee.Number.parse(out_im_type.slice(3));
+    var year_idx = years_list.indexOf(year);
+    var rap_im = ee.Image(rap_ic_list.get(year_idx));
+    return rap_im;
   }else if (out_im_type == 'OnetoOne'){
     var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
     var oneone_ic = rap_ic.merge(prediction_ic);
@@ -420,7 +438,7 @@ function makeLegend(){
   
     for (var i = 0; i < [0, 1, 2, 3].length; i++){
       var colorBox = ui.Label({
-        style: {
+        style:{
           backgroundColor:bandVis.palette[i],
           padding:'10px',
           margin:'0px',
@@ -590,14 +608,14 @@ main_panel.add(year_dropdownA);
 function renderYearB(year_selection){
   Map.layers().reset();
   if (cover_bands.indexOf(band_selection) != -1){
-    type_selection = 'predcov'.concat(year_selection);
+    type_selection = 'covpred'.concat(year_selection);
   }else if (prod_bands.indexOf(band_selection) != -1){
-    type_selection = 'predpro'.concat(year_selection);
+    type_selection = 'propred'.concat(year_selection);
   }
   var im_to_show = main_fn(band_selection, ic_selection, type_selection);
-  if (type_selection.slice(0, 7) == 'predcov'){
+  if (type_selection.slice(0, 7) == 'covpred'){
     bandVis = covVis;
-  }else if (type_selection.slice(0, 7) == 'predpro'){
+  }else if (type_selection.slice(0, 7) == 'propred'){
     bandVis = proVis;
   }
   Map.addLayer(im_to_show, bandVis);
@@ -744,4 +762,103 @@ main_panel.add(trend_checkbox);
 
 ui.root.add(main_panel);
 
+/////////////////////
+//Render info box
 
+var info_str = 'Overview: \n' +
+               'This app is built using the Google Earth Engine cloud platform and publically available datasets. \n' +
+               'The purpose is to visualize the Rangeland Assessment Platform (RAP) dataset of vegetation cover and growth \n' +
+               'and to explore connections between RAP and climate variables of the observational PRISM dataset. \n' +
+               'The spatial resolution is at ~800 m according to the resolution of PRISM, while RAP was resampled\n' +
+               'and spatially averaged to this resolution from its native resolution of 30 m. The sensitivity of RAP \n' +
+               'to climate is quantified using multiple linear regressions to predict individual RAP variables \n' +
+               'based on PRISM variables as predictors. Each ~800 m pixel is fitted with it\'s own independet regression \n' +
+               'model. Also visualized is trend analysis of year-to-year RAP time series based on simple linear regression. \n' +
+               ' \n' +
+               '\n' +                
+               'Definitions: \n' +
+               'RAP: Rangeland Assessment Platform is a dataset with rangeland-specific vegetation growth and cover. \n' + 
+               'PRISM: A US gridded observation climate dataset. In this case, the monthly ~800 m dataset is used. \n' +                
+               'AFG: Annual forbs and grass. Units (Frac. %). \n' + 
+               'PFG: Perennial forbs and grass. Units (Frac. %). \n' +
+               'BRG: Bare Ground. Units (Frac. %).\n' +
+               'SHR: Shurbs. Units (Frac. %). \n' +               
+               'TRE: Trees. Units (Frac. %). \n' +
+               'AFGnpp: Annual forbs and grass. Units (Frac. %). \n' + 
+               'PFGnpp: Perennial forbs and grass. Units (Frac. %). \n' +
+               'SHRnpp: Shurbs. Units (Frac. %). \n' +               
+               'TREnpp: Trees. Units (Frac. %). \n' +    
+               'CMIP5: An ensemble of Global Climate Models (GCMs) representing standard climate projections. \n' + 
+               'NEX-DCP30: A highly downscaled (~800m) monthly climate dataset for the US representing 33 GCMs in \n' + 
+               'the CMIP5 ensemble with the retrospective period of 1950-2005 and prospective period of 2006-2099. \n' + 
+               '\n' + 
+               'Usage:  \n' +
+               'There is no consensus on which standard climate projection scenario is most likely. \n' + 
+               'However, some point towards RCP4.5 (known as the middle-ground scenario) as a likely projection \n' + 
+               'where global temperatures rise by 2-3 °C by 2100. For doing risk assessment, a worst-case scenario can be \n' + 
+               'represented either by RCP6.0 or RCP8.5. Considering the dramatic rates of global change in RCP8.5, \n' + 
+               'RCP6.0 has been proposed as a more plausible worst-case scenario. The CCSM4 GCM is recommended \n' + 
+               'because its outcome is typical of the CMIP5 ensemble, and it has compartively accurate \n' + 
+               'climate norm baselines for the US. \n' + 
+               '\n' + 
+               'Uncertainty: \n' +  
+               'The uncertainty metric doesn\'t indicate anything about which emissions scenario is most likely. \n' + 
+               'It describes the likelihood of a climate type existing given an assummed emissions scenario. \n' + 
+               'The metric considers the entire ensemble of 33 GCMs esemble and simply calculates the number of GCMs  \n' + 
+               'that agree a climate type exists at a given time and location expressed as a percentage of the total. \n' +  
+               'There is one layer per climate type in order to visualize agreement for each corresponding climate type.  \n' + 
+               'The built-in inspector tool can be used to click on the uncertainty layers to show these percentages. \n' +
+               'The uncertainty layers will load much slower because the KGCC classification has to be done for every GCM. \n' +
+               '\n' + 
+               'Citations: \n' + 
+               'Beck, H. E., Zimmermann, N. E., McVicar, T. R., Vergopolan, N., Berg, A., & Wood, E. F. (2018). \n' + 
+               'Present and future Köppen-Geiger climate classification maps at 1-km resolution. Scientific data, 5(1), 1-12. \n' + 
+               '\n' + 
+               'Peel, M. C., Finlayson, B. L., & McMahon, T. A. (2007). \n' + 
+               'Updated world map of the Köppen-Geiger climate classification. \n' + 
+               'Hydrology and earth system sciences, 11(5), 1633-1644. \n' + 
+               '\n' + 
+               'Thrasher, B., Xiong, J., Wang, W., Melton, F., Michaelis, A., & Nemani, R. (2013). \n' + 
+               'Downscaled climate projections suitable for resource management. \n' + 
+               'Eos, Transactions American Geophysical Union, 94(37), 321-323. \n' + 
+               '\n' + 
+               'Additional Notes: \n' +
+               'Use of the updated NEX-DCP30 for CMIP6 will be considered for this app \n' + 
+               'if/when it becomes available on Google Earth Engine. For an in-depth description of each climate \n' + 
+               'type, see wikipedia.org/wiki/Köppen_climate_classification'
+      
+print(info_str);
+
+
+var labelStyle = {
+  height:'600px',
+  width:'500px',
+  position:'bottom-center',
+  whiteSpace:'pre',
+  padding:'1px',
+  margin:'2px',
+  textAlign:'left',
+  fontSize:'10px'
+}
+
+var textBox = ui.Label({value:info_str, style:labelStyle});
+
+function renderInfobox(bool_obj){
+  if (bool_obj == true){
+    ui.root.add(textBox);
+  }
+  else{
+    ui.root.remove(textBox);
+  }
+}
+
+var checkStyle = {
+  position:'top-left',
+  fontSize:'12px'
+}
+
+var infoCheck = ui.Checkbox({
+  label:'Show ReadMe',
+  onChange:renderInfobox,
+  style:checkStyle
+});
