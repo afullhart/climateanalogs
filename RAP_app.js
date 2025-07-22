@@ -99,23 +99,24 @@ function main_fn(band, rap_ic, out_im_type){
   }
   
   var rap_ic = ee.ImageCollection(years_list.map(clip_fn));
-
-  function npp2biomass_fn(im){
-    var year = ee.Date(im.get('system:time_start')).format('YYYY');
-    var matYear = mat_ic.filterDate(year).first();
-    var fANPP = (matYear.multiply(0.0129)).add(0.171).rename('fANPP');
-    var agb_im = im.multiply(0.0001) // NPP scalar 
+  var rap_ic_list = rap_ic.toList(999);
+  var mat_ic_list = mat_ic.toList(999);
+  
+  function npp2biomass_fn(yr_idx){
+    var mat_im = ee.Image(mat_ic_list.get(yr_idx));
+    var rap_im = ee.Image(rap_ic_list.get(yr_idx));
+    var fANPP_im = mat_im.multiply(0.0129).add(0.171).rename('fANPP');
+    var agb_im = rap_im.multiply(0.0001) // NPP scalar 
       .multiply(2.20462) // KgC to lbsC
       .multiply(4046.86) // m2 to acres
-      .multiply(fANPP)  // fraction of NPP aboveground
       .multiply(2.1276) // C to biomass
-      .rename(['afgAGB', 'pfgAGB'])
-      .copyProperties(im, ['system:time_start'])
-      .set('year', year);
+      .multiply(fANPP_im)  // fraction of NPP aboveground
     return agb_im;
-  };
-
-  var rap_ic = ee.ImageCollection(years_list.map(npp22biomass_fn));
+  }
+  
+  if (band_selection.slice(3) == 'NPP'){
+    var rap_ic = ee.ImageCollection(yr_idx_list.map(npp2biomass_fn));
+  }
 
   var clima_ic_list = clima_ic.toList(999);
   var rap_ic_list = rap_ic.toList(999);
