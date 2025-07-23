@@ -74,15 +74,20 @@ function npp2biomass_fn(yr_idx){
   var mat_im = ee.Image(mat_ic_list.get(yr_idx));
   var rap_im = ee.Image(prod_ic_list.get(yr_idx));
   var year = ee.Date(rap_im.get('system:time_start')).format('YYYY');
-  var fANPP_im = mat_im.multiply(0.0129).add(0.171);
+  var fANPP_im = mat_im.multiply(0.0129).add(0.171); //Above-ground NPP fraction;
+  var fANPP_tre = ee.Number(0.5); //Above-ground NPP fraction;
   var agb_im = rap_im.multiply(0.0001) // NPP scalar 
     .multiply(2.20462) // KgC to lbsC
     .multiply(4046.86) // m2 to acres
     .multiply(2.1276) // C to biomass
-    .multiply(fANPP_im) // fraction of NPP aboveground
-    .copyProperties(rap_im, ['system:time_start'])
-    .set('year', year);
-  var im = ee.Image(agb_im).rename('afgAGB', 'pfgAGB', 'shrAGB', 'treAGB');
+    .copyProperties(rap_im, ['system:time_start']).set('year', year);
+  var agb_im = ee.Image(agb_im).rename('afgAGB', 'pfgAGB', 'shrAGB', 'treAGB');
+  var grd_im = agb_im.select(['afgAGB', 'pfgAGB', 'shrAGB']);
+  var grd_im = grd_im.multiply(fANPP_im);
+  var tre_im = agb_im.select(['treAGB']);
+  var tre_im = tre_im.multiply(fANPP_tre);
+  var im = grd_im.addBands(tre_im);
+  var im = ee.Image(im.copyProperties(agb_im, agb_im.propertyNames()));
   var im = im.setDefaultProjection('EPSG:4326', transform_new);
   var im = im.reproject({crs:proj.crs(), crsTransform:transform_new});
   return im;
@@ -295,7 +300,6 @@ function main_fn(band, rap_ic, out_im_type){
 //END DeBugGing TEsTING dEbuGgINg tESTiNG TEsTiNG
 
 
-
 ///////////////////////
 ///////////////////////
 //USER INTERFACE
@@ -322,7 +326,7 @@ var rmseProVis = {
 
 var rmseBioVis = {
   min:0,
-  max:20,
+  max:250,
   palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7]
 };
 
@@ -357,7 +361,7 @@ var proVis = {
 var palettes = require('users/gena/packages:palettes');
 var bioVis = {
   min:0,
-  max:80,
+  max:500,
   palette:palettes.niccoli.cubicl[7]
 };
 
@@ -377,8 +381,8 @@ var procoeffVis = {
 
 var palettes = require('users/gena/packages:palettes');
 var biocoeffVis = {
-  min:-0.5,
-  max:0.5,
+  min:-2.0,
+  max:2.0,
   palette:palettes.colorbrewer.BrBG[7]
 };
 
@@ -403,8 +407,7 @@ var chartPanelStyle = {
   width:'400px',
   margin:'10px 10px'};
 
-
-///////////////////////
+/////////////////////
 //Global Widget Vars
 
 var palettes = require('users/gena/packages:palettes');
