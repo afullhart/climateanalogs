@@ -16,8 +16,10 @@ var dates_list = ee.List(years_list.map(make_date_fn));
 var years_str_list = ['1986', '1987', '1988', '1989', '1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'];
 var cover_bands = ['AFG', 'BGR', 'LTR', 'PFG', 'SHR', 'TRE'];
 var prod_bands = ['afgNPP', 'pfgNPP', 'shrNPP', 'treNPP'];
+var bio_bands = ['afgAGB', 'pfgAGB', 'shrAGB', 'treAGB'];
 var cover_ic = ee.ImageCollection('projects/rap-data-365417/assets/vegetation-cover-v3');
 var prod_ic = ee.ImageCollection('projects/rap-data-365417/assets/npp-partitioned-v3');
+var mat_ic = ee.ImageCollection('projects/rap-data-365417/assets/gridmet-MAT');
 var metric_strs = ['rmse', 'rsqr', 'rsqrA', 'Fconf', 'coeff', 'Tconf'];
 
 var n = years_list.size();
@@ -99,8 +101,15 @@ function main_fn(band, rap_ic, out_im_type){
 
   var rap_ic = ee.ImageCollection(years_list.map(clip_fn));
   var rap_ic_list = rap_ic.toList(999);
-  var mat_ic_list = mat_ic.toList(999);
   
+  function nppscaled2npp_fn(yr_idx){
+    var rap_im = ee.Image(rap_ic_list.get(yr_idx));
+    var npp_im = rap_im.multiply(0.0001).multiply(4046.86); // NPP scalar, m2 to acres
+    return npp_im;
+  }
+
+  var mat_ic_list = mat_ic.toList(999);
+
   function npp2biomass_fn(yr_idx){
     var mat_im = ee.Image(mat_ic_list.get(yr_idx));
     var rap_im = ee.Image(rap_ic_list.get(yr_idx));
@@ -114,6 +123,10 @@ function main_fn(band, rap_ic, out_im_type){
   }
   
   if (band_selection.slice(3) == 'NPP'){
+    var rap_ic = ee.ImageCollection(yr_idx_list.map(nppscaled2npp_fn));
+  }
+  
+  if (band_selection.slice(3) == 'ABG'){
     var rap_ic = ee.ImageCollection(yr_idx_list.map(npp2biomass_fn));
   }
 
@@ -204,14 +217,14 @@ function main_fn(band, rap_ic, out_im_type){
     return coef_im.select('c2');
   }else if (out_im_type == 'Tconf'){
     return con_im;
-  }else if (out_im_type.slice(0, 7) == 'covpred' || out_im_type.slice(0, 7) == 'propred'){
+  }else if (out_im_type.slice(0, 7) == 'covpred' || out_im_type.slice(0, 7) == 'propred') || out_im_type.slice(0, 7) == 'agbpred'){
     var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
     var pred_ic_list = prediction_ic.toList(999);
     var year = ee.Number.parse(out_im_type.slice(7));
     var year_idx = years_list.indexOf(year);
     var pred_im = ee.Image(pred_ic_list.get(year_idx));
     return pred_im;
-  }else if (out_im_type.slice(0, 3) == 'cov' || out_im_type.slice(0, 3) == 'pro'){
+  }else if (out_im_type.slice(0, 3) == 'cov' || out_im_type.slice(0, 3) == 'pro' || out_im_type.slice(0, 3) == 'agb'){
     var year = ee.Number.parse(out_im_type.slice(3));
     var year_idx = years_list.indexOf(year);
     var rap_im = ee.Image(rap_ic_list.get(year_idx));
@@ -404,6 +417,8 @@ function makeLegend(){
     var lTitle = 'frac. %';
   }else if ((type_selection.slice(0, 3) == 'pro') || (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0)){
     var lTitle = 'lbs/acre';
+  }else if ((type_selection.slice(0, 3) == 'agb') || (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0)){
+    var lTitle = 'KgC/acre';
   }else{
     var lTitle = ' (-)';
   }
@@ -487,13 +502,32 @@ function renderVariable(var_selection){
     if (type_selection.slice(0, 3) == 'pro'){
       var year = type_selection.slice(-4);
       type_selection = type_selection.replace('pro', 'cov').slice(0, -4).concat(year);
+    }   
+    if (type_selection.slice(0, 3) == 'agb'){
+      var year = type_selection.slice(-4);
+      type_selection = type_selection.replace('agb', 'cov').slice(0, -4).concat(year);
     }    
-  }else{
+  }else if (pro_bands.indexOf(band_selection) >= 0){
     ic_selection = prod_ic;
     bandVis = proVis;
     if (type_selection.slice(0, 3) == 'cov'){
       var year = type_selection.slice(-4);
       type_selection = type_selection.replace('cov', 'pro').slice(0, -4).concat(year);
+    }
+    if (type_selection.slice(0, 3) == 'agb'){
+      var year = type_selection.slice(-4);
+      type_selection = type_selection.replace('agb', 'pro').slice(0, -4).concat(year);
+    }
+  }else if (bio_bands.indexOf(band_selection) >= 0){
+    ic_selection = agb_ic;
+    bandVis = proVis;
+    if (type_selection.slice(0, 3) == 'cov'){
+      var year = type_selection.slice(-4);
+      type_selection = type_selection.replace('cov', 'agb').slice(0, -4).concat(year);
+    }
+    if (type_selection.slice(0, 3) == 'pro'){
+      var year = type_selection.slice(-4);
+      type_selection = type_selection.replace('pro', 'agb').slice(0, -4).concat(year);
     }
   }
   var im_to_show = main_fn(band_selection, ic_selection, type_selection);
@@ -517,17 +551,21 @@ function renderVariable(var_selection){
     bandVis = covVis;
   }else if (type_selection.slice(0, 3) == 'pro'){
     bandVis = proVis;
+  }else if (type_selection.slice(0, 3) == 'agb'){
+    bandVis = bioVis;
   }else if (type_selection.slice(0, 7) == 'covpred'){
     bandVis = covVis;
   }else if (type_selection.slice(0, 7) == 'propred'){
     bandVis = proVis;
+  }else if (type_selection.slice(0, 7) == 'agbpred'){
+    bandVis = agbVis;
   }
   Map.addLayer(im_to_show, bandVis);
   makeLegend();
 }
 
 var variable_dropdown = ui.Select({
-  items:cover_bands.concat(prod_bands), 
+  items:cover_bands.concat(prod_bands).concat(bio_bands), 
   placeholder:'Select Variable', 
   onChange:renderVariable,
   style:widgetStyle
@@ -546,6 +584,8 @@ function renderMetric(metric_selection){
     bandVis = rmseCovVis;
   }else if (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0){
     bandVis = rmseProVis;
+  }else if (type_selection == 'rmse' && bio_bands.indexOf(band_selection) >= 0){
+    bandVis = rmseBioVis;
   }else if (type_selection == 'rsqr'){
     bandVis = rsqrVis;
   }else if (type_selection == 'rsqrA'){
@@ -581,12 +621,16 @@ function renderYearA(year_selection){
     type_selection = 'cov'.concat(year_selection);
   }else if (prod_bands.indexOf(band_selection) != -1){
     type_selection = 'pro'.concat(year_selection);
+  }else if (bio_bands.indexOf(band_selection) != -1){
+    type_selection = 'agb'.concat(year_selection);
   }
   var im_to_show = main_fn(band_selection, ic_selection, type_selection);
   if (type_selection.slice(0, 3) == 'cov'){
     bandVis = covVis;
   }else if (type_selection.slice(0, 3) == 'pro'){
     bandVis = proVis;
+  }else if (type_selection.slice(0, 3) == 'agb'){
+    bandVis = bioVis;
   }
   Map.addLayer(im_to_show, bandVis);
   makeLegend();
@@ -610,12 +654,16 @@ function renderYearB(year_selection){
     type_selection = 'covpred'.concat(year_selection);
   }else if (prod_bands.indexOf(band_selection) != -1){
     type_selection = 'propred'.concat(year_selection);
+  }else if (bio_bands.indexOf(band_selection) != -1){
+    type_selection = 'agbpred'.concat(year_selection);
   }
   var im_to_show = main_fn(band_selection, ic_selection, type_selection);
   if (type_selection.slice(0, 7) == 'covpred'){
     bandVis = covVis;
   }else if (type_selection.slice(0, 7) == 'propred'){
     bandVis = proVis;
+  }else if (type_selection.slice(0, 7) == 'agbpred'){
+    bandVis = bioVis;
   }
   Map.addLayer(im_to_show, bandVis);
   makeLegend();
@@ -860,5 +908,4 @@ var info_checkbox = ui.Checkbox({
 main_panel.add(info_checkbox);
 
 ui.root.add(main_panel);
-
 
