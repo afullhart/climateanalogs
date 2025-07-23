@@ -18,7 +18,6 @@ var cover_bands = ['AFG', 'BGR', 'LTR', 'PFG', 'SHR', 'TRE'];
 var prod_bands = ['afgNPP', 'pfgNPP', 'shrNPP', 'treNPP'];
 var cover_ic = ee.ImageCollection('projects/rap-data-365417/assets/vegetation-cover-v3');
 var prod_ic = ee.ImageCollection('projects/rap-data-365417/assets/npp-partitioned-v3');
-var mat_ic = ee.ImageCollection("projects/rap-data-365417/assets/gridmet-MAT");
 var metric_strs = ['rmse', 'rsqr', 'rsqrA', 'Fconf', 'coeff', 'Tconf'];
 
 var n = years_list.size();
@@ -97,7 +96,7 @@ function main_fn(band, rap_ic, out_im_type){
     var clip_im = ee.Image(im).clip(area_shp);
     return clip_im;
   }
-  
+
   var rap_ic = ee.ImageCollection(years_list.map(clip_fn));
   var rap_ic_list = rap_ic.toList(999);
   var mat_ic_list = mat_ic.toList(999);
@@ -120,7 +119,7 @@ function main_fn(band, rap_ic, out_im_type){
 
   var clima_ic_list = clima_ic.toList(999);
   var rap_ic_list = rap_ic.toList(999);
-  
+
   function merge_bands_fn(iobj){
     var i = ee.Number(iobj);
     var p_im = ee.Image(clima_ic_list.get(i));
@@ -361,7 +360,6 @@ var chartPanelStyle = {
   width:'400px',
   margin:'10px 10px'};
 
-//ui.root.setLayout(ui.Panel.Layout.absolute());
 var main_panel = ui.Panel({
   layout:ui.Panel.Layout.flow('vertical'),
   style: {width: '300px'}
@@ -761,12 +759,10 @@ var trend_checkbox = ui.Checkbox({
 
 main_panel.add(trend_checkbox);
 
-ui.root.add(main_panel);
-
 /////////////////////
 //Render info box
 
-var info_str = 'Overview: \n' +
+var info_str = 'OVERVIEW: \n' +
                'This app is built using the Google Earth Engine cloud platform and publically available datasets. \n' +
                'The purpose is to visualize the Rangeland Assessment Platform (RAP) dataset of vegetation cover and growth \n' +
                'and to explore connections between RAP and climate variables of the observational PRISM dataset. \n' +
@@ -777,7 +773,7 @@ var info_str = 'Overview: \n' +
                'model. Also visualized is trend analysis of year-to-year RAP time series based on simple linear regression. \n' +
                ' \n' +
                '\n' +                
-               'Definitions: \n' +
+               'DEFINITIONS: \n' +
                'RAP: Rangeland Assessment Platform is a dataset with rangeland-specific vegetation growth and cover. \n' + 
                'PRISM: A US gridded observation climate dataset. In this case, the monthly ~800 m dataset is used. \n' +                
                'AFG: Annual forbs and grass. Units (Frac. %). \n' + 
@@ -785,31 +781,21 @@ var info_str = 'Overview: \n' +
                'BRG: Bare Ground. Units (Frac. %).\n' +
                'SHR: Shurbs. Units (Frac. %). \n' +               
                'TRE: Trees. Units (Frac. %). \n' +
-               'AFGnpp: Annual forbs and grass. Units (Frac. %). \n' + 
-               'PFGnpp: Perennial forbs and grass. Units (Frac. %). \n' +
-               'SHRnpp: Shurbs. Units (Frac. %). \n' +               
-               'TREnpp: Trees. Units (Frac. %). \n' +    
-               'CMIP5: An ensemble of Global Climate Models (GCMs) representing standard climate projections. \n' + 
-               'NEX-DCP30: A highly downscaled (~800m) monthly climate dataset for the US representing 33 GCMs in \n' + 
-               'the CMIP5 ensemble with the retrospective period of 1950-2005 and prospective period of 2006-2099. \n' + 
+               'NPP: Net Primary Production (Kg C / m²) \n' + 
+               'AFGnpp: NPP of annual forbs and grass converted to aboveground biomass lbs/acre. \n' + 
+               'PFGnpp: NPP of perennial forbs and grass converted to aboveground biomass lbs/acre. \n' +
+               'SHRnpp: NPP of shrubs converted to aboveground biomass lbs/acre. \n' +               
+               'TREnpp: NPP of trees converted to aboveground biomass lbs/acre. \n' +
+               'LR: linear regression is a statistical model of the relationship between a dependend variable and one \n' + 
+               'or more independent variables. \n' + 
                '\n' + 
-               'Usage:  \n' +
-               'There is no consensus on which standard climate projection scenario is most likely. \n' + 
-               'However, some point towards RCP4.5 (known as the middle-ground scenario) as a likely projection \n' + 
-               'where global temperatures rise by 2-3 °C by 2100. For doing risk assessment, a worst-case scenario can be \n' + 
-               'represented either by RCP6.0 or RCP8.5. Considering the dramatic rates of global change in RCP8.5, \n' + 
-               'RCP6.0 has been proposed as a more plausible worst-case scenario. The CCSM4 GCM is recommended \n' + 
-               'because its outcome is typical of the CMIP5 ensemble, and it has compartively accurate \n' + 
-               'climate norm baselines for the US. \n' + 
-               '\n' + 
-               'Uncertainty: \n' +  
-               'The uncertainty metric doesn\'t indicate anything about which emissions scenario is most likely. \n' + 
-               'It describes the likelihood of a climate type existing given an assummed emissions scenario. \n' + 
-               'The metric considers the entire ensemble of 33 GCMs esemble and simply calculates the number of GCMs  \n' + 
-               'that agree a climate type exists at a given time and location expressed as a percentage of the total. \n' +  
-               'There is one layer per climate type in order to visualize agreement for each corresponding climate type.  \n' + 
-               'The built-in inspector tool can be used to click on the uncertainty layers to show these percentages. \n' +
-               'The uncertainty layers will load much slower because the KGCC classification has to be done for every GCM. \n' +
+               'METHODOLOGY:  \n' +
+               'Predictive statisticical models based on LR were used to predict RAP variables based on year-to-year \n' + 
+               'datapoints from 1986-2014. First, a multiple linear regression (MLR) is used to predict annual RAP variables\n' + 
+               'from annually averaged PRISM variables. Six PRISM predictor variables were used: precipitation, \n' + 
+               'mean max/min temperature, mean dewpoint temperature, and mean max/min vapor pressure deficit. \n' + 
+               'asdYAYAYAflkasdfljk \n' + 
+               'OKokOKOKOKOKOKOKOK \n' + 
                '\n' + 
                'Citations: \n' + 
                'Beck, H. E., Zimmermann, N. E., McVicar, T. R., Vergopolan, N., Berg, A., & Wood, E. F. (2018). \n' + 
@@ -826,12 +812,9 @@ var info_str = 'Overview: \n' +
                'Additional Notes: \n' +
                'Use of the updated NEX-DCP30 for CMIP6 will be considered for this app \n' + 
                'if/when it becomes available on Google Earth Engine. For an in-depth description of each climate \n' + 
-               'type, see wikipedia.org/wiki/Köppen_climate_classification'
-      
-print(info_str);
+               'type, see wikipedia.org/wiki/Köppen_climate_classification';
 
-
-var labelStyle = {
+var infoLabelStyle = {
   height:'600px',
   width:'500px',
   position:'bottom-center',
@@ -839,27 +822,43 @@ var labelStyle = {
   padding:'1px',
   margin:'2px',
   textAlign:'left',
-  fontSize:'10px'
-}
+  fontSize:'12px'
+};
 
-var textBox = ui.Label({value:info_str, style:labelStyle});
-
-function renderInfobox(bool_obj){
-  if (bool_obj == true){
-    ui.root.add(textBox);
-  }
-  else{
-    ui.root.remove(textBox);
-  }
-}
-
-var checkStyle = {
+var infoCheckStyle = {
   position:'top-left',
   fontSize:'12px'
+};
+
+var textPanelStyle = {
+  position:'bottom-center', 
+  stretch:'vertical',
+  height:'600px',
+  width:'600px',
+  margin:'10px 10px'};
+
+var text_box = ui.Label({value:info_str, style:infoLabelStyle});
+var text_panel = ui.Panel({widgets:null, layout:null, style:textPanelStyle});
+
+function render_infobox(bool_obj){
+  if (bool_obj === true){
+    text_panel.add(text_box);
+    Map.add(text_panel);
+  }
+  else{
+    Map.remove(text_panel);
+    text_panel.clear();
+  }
 }
 
-var infoCheck = ui.Checkbox({
+var info_checkbox = ui.Checkbox({
   label:'Show ReadMe',
-  onChange:renderInfobox,
+  onChange:render_infobox,
   style:checkStyle
 });
+
+main_panel.add(info_checkbox);
+
+ui.root.add(main_panel);
+
+
