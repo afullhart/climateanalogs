@@ -73,20 +73,22 @@ var prod_ic_list = prod_ic.toList(999);
 function npp2biomass_fn(yr_idx){
   var mat_im = ee.Image(mat_ic_list.get(yr_idx));
   var rap_im = ee.Image(prod_ic_list.get(yr_idx));
-  var fANPP_im = mat_im.multiply(0.0129).add(0.171).rename('fANPP');
+  var year = ee.Date(rap_im.get('system:time_start')).format('YYYY');
+  var fANPP_im = mat_im.multiply(0.0129).add(0.171);
   var agb_im = rap_im.multiply(0.0001) // NPP scalar 
     .multiply(2.20462) // KgC to lbsC
     .multiply(4046.86) // m2 to acres
     .multiply(2.1276) // C to biomass
-    .multiply(fANPP_im);  // fraction of NPP aboveground
-  //var im = agb_im.setDefaultProjection('EPSG:4326', transform_new);
-  //var im = im.reproject({crs:proj.crs(), crsTransform:transform_new});
-  //var clip_im = ee.Image(im).clip(area_shp);
-  return agb_im;
+    .multiply(fANPP_im) // fraction of NPP aboveground
+    .copyProperties(rap_im, ['system:time_start'])
+    .set('year', year);
+  var im = ee.Image(agb_im).rename('afgAGB', 'pfgAGB', 'shrAGB', 'treAGB');
+  var im = im.setDefaultProjection('EPSG:4326', transform_new);
+  var im = im.reproject({crs:proj.crs(), crsTransform:transform_new});
+  return im;
 }
 
 var agb_ic = ee.ImageCollection(yr_idx_list.map(npp2biomass_fn));
-print(agb_ic);
 
 //PRISM STUFF
 
@@ -128,7 +130,7 @@ function main_fn(band, rap_ic, out_im_type){
 
   var rap_ic = ee.ImageCollection(years_list.map(clip_fn));
   var rap_ic_list = rap_ic.toList(999);
-  
+
   function nppscaled2npp_fn(yr_idx){
     var rap_im = ee.Image(rap_ic_list.get(yr_idx));
     var npp_im = rap_im.multiply(0.0001).multiply(4046.86); // NPP scalar, m2 to acres
@@ -137,10 +139,6 @@ function main_fn(band, rap_ic, out_im_type){
 
   if (band_selection.slice(3) == 'NPP'){
     var rap_ic = ee.ImageCollection(yr_idx_list.map(nppscaled2npp_fn));
-  }
-  
-  if (band_selection.slice(3) == 'AGB'){
-    var rap_ic = agb_ic.select(band_selection.replace('AGB', 'NPP'));
   }
 
   var clima_ic_list = clima_ic.toList(999);
@@ -249,16 +247,12 @@ function main_fn(band, rap_ic, out_im_type){
   }else if (out_im_type == 'Trend'){
     return rap_ic;
   }else if (out_im_type == 'Debug'){
-    var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
-    return ee.List([t_im, prediction_ic]);
+    return null;
   }
 }
 
 
 //START DeBugGing TEsTING deBUggiNg tESTiNG TEsTiNG
-//var t_im = ee.Image(main_fn('PFG', cover_ic, 'Debug').get(0));
-//print(t_im);
-//Map.addLayer(t_im);
 
 // var merge_props = merge_ic.getRegion(geometry, scale);
 // var pred_props = pred_ic.getRegion(geometry, scale);
@@ -451,9 +445,9 @@ function makeLegend(){
   if ((type_selection.slice(0, 3) == 'cov') || (type_selection == 'rmse' && cover_bands.indexOf(band_selection) >= 0)){
     var lTitle = 'frac. %';
   }else if ((type_selection.slice(0, 3) == 'pro') || (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0)){
-    var lTitle = 'lbs/acre';
-  }else if ((type_selection.slice(0, 3) == 'agb') || (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0)){
     var lTitle = 'KgC/acre';
+  }else if ((type_selection.slice(0, 3) == 'agb') || (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0)){
+    var lTitle = 'lbs/acre';
   }else{
     var lTitle = ' (-)';
   }
@@ -555,7 +549,7 @@ function renderVariable(var_selection){
     }
   }else if (bio_bands.indexOf(band_selection) >= 0){
     ic_selection = agb_ic;
-    bandVis = proVis;
+    bandVis = bioVis;
     if (type_selection.slice(0, 3) == 'cov'){
       var year = type_selection.slice(-4);
       type_selection = type_selection.replace('cov', 'agb').slice(0, -4).concat(year);
@@ -570,6 +564,8 @@ function renderVariable(var_selection){
     bandVis = rmseCovVis;
   }else if (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0){
     bandVis = rmseProVis;
+  }else if (type_selection == 'rmse' && bio_bands.indexOf(band_selection) >= 0){
+    bandVis = rmseBioVis;
   }else if (type_selection == 'rsqr'){
     bandVis = rsqrVis;
   }else if (type_selection == 'rsqrA'){
@@ -850,56 +846,56 @@ main_panel.add(trend_checkbox);
 //Render info box
 
 var info_str = 'OVERVIEW: \n' +
-               'This app is built using the Google Earth Engine cloud platform and publically available datasets. \n' +
-               'The purpose is to visualize the Rangeland Assessment Platform (RAP) dataset of vegetation cover and growth \n' +
-               'and to explore connections between RAP and climate variables of the observational PRISM dataset. \n' +
-               'The spatial resolution is at ~800 m according to the resolution of PRISM, while RAP was resampled\n' +
-               'and spatially averaged to this resolution from its native resolution of 30 m. The sensitivity of RAP \n' +
-               'to climate is quantified using multiple linear regressions to predict individual RAP variables \n' +
-               'based on PRISM variables as predictors. Each ~800 m pixel is fitted with it\'s own independet regression \n' +
-               'model. Also visualized is trend analysis of year-to-year RAP time series based on simple linear regression. \n' +
-               ' \n' +
-               '\n' +                
-               'DEFINITIONS: \n' +
-               'RAP: Rangeland Assessment Platform is a dataset with rangeland-specific vegetation growth and cover. \n' + 
-               'PRISM: A US gridded observation climate dataset. In this case, the monthly ~800 m dataset is used. \n' +                
-               'AFG: Annual forbs and grass. Units (Frac. %). \n' + 
-               'PFG: Perennial forbs and grass. Units (Frac. %). \n' +
-               'BRG: Bare Ground. Units (Frac. %).\n' +
-               'SHR: Shurbs. Units (Frac. %). \n' +               
-               'TRE: Trees. Units (Frac. %). \n' +
-               'NPP: Net Primary Production (Kg C / m²) \n' + 
-               'AFGnpp: NPP of annual forbs and grass converted to aboveground biomass lbs/acre. \n' + 
-               'PFGnpp: NPP of perennial forbs and grass converted to aboveground biomass lbs/acre. \n' +
-               'SHRnpp: NPP of shrubs converted to aboveground biomass lbs/acre. \n' +               
-               'TREnpp: NPP of trees converted to aboveground biomass lbs/acre. \n' +
-               'LR: linear regression is a statistical model of the relationship between a dependend variable and one \n' + 
-               'or more independent variables. \n' + 
-               '\n' + 
-               'METHODOLOGY:  \n' +
-               'Predictive statisticical models based on LR were used to predict RAP variables based on year-to-year \n' + 
-               'datapoints from 1986-2014. First, a multiple linear regression (MLR) is used to predict annual RAP variables\n' + 
-               'from annually averaged PRISM variables. Six PRISM predictor variables were used: precipitation, \n' + 
-               'mean max/min temperature, mean dewpoint temperature, and mean max/min vapor pressure deficit. \n' + 
-               'asdYAYAYAflkasdfljk \n' + 
-               'OKokOKOKOKOKOKOKOK \n' + 
-               '\n' + 
-               'Citations: \n' + 
-               'Beck, H. E., Zimmermann, N. E., McVicar, T. R., Vergopolan, N., Berg, A., & Wood, E. F. (2018). \n' + 
-               'Present and future Köppen-Geiger climate classification maps at 1-km resolution. Scientific data, 5(1), 1-12. \n' + 
-               '\n' + 
-               'Peel, M. C., Finlayson, B. L., & McMahon, T. A. (2007). \n' + 
-               'Updated world map of the Köppen-Geiger climate classification. \n' + 
-               'Hydrology and earth system sciences, 11(5), 1633-1644. \n' + 
-               '\n' + 
-               'Thrasher, B., Xiong, J., Wang, W., Melton, F., Michaelis, A., & Nemani, R. (2013). \n' + 
-               'Downscaled climate projections suitable for resource management. \n' + 
-               'Eos, Transactions American Geophysical Union, 94(37), 321-323. \n' + 
-               '\n' + 
-               'Additional Notes: \n' +
-               'Use of the updated NEX-DCP30 for CMIP6 will be considered for this app \n' + 
-               'if/when it becomes available on Google Earth Engine. For an in-depth description of each climate \n' + 
-               'type, see wikipedia.org/wiki/Köppen_climate_classification';
+              'This app is built using the Google Earth Engine cloud platform and publically available datasets. \n' +
+              'The purpose is to visualize the Rangeland Assessment Platform (RAP) dataset of vegetation cover and growth \n' +
+              'and to explore connections between RAP and climate variables of the observational PRISM dataset. \n' +
+              'The spatial resolution is at ~800 m according to the resolution of PRISM, while RAP was resampled\n' +
+              'and spatially averaged to this resolution from its native resolution of 30 m. The sensitivity of RAP \n' +
+              'to climate is quantified using multiple linear regressions to predict individual RAP variables \n' +
+              'based on PRISM variables as predictors. Each ~800 m pixel is fitted with it\'s own independet regression \n' +
+              'model. Also visualized is trend analysis of year-to-year RAP time series based on simple linear regression. \n' +
+              ' \n' +
+              '\n' +                
+              'DEFINITIONS: \n' +
+              'RAP: Rangeland Assessment Platform is a dataset with rangeland-specific vegetation growth and cover. \n' + 
+              'PRISM: A US gridded observation climate dataset. In this case, the monthly ~800 m dataset is used. \n' +                
+              'AFG: Annual forbs and grass. Units (Frac. %). \n' + 
+              'PFG: Perennial forbs and grass. Units (Frac. %). \n' +
+              'BRG: Bare Ground. Units (Frac. %).\n' +
+              'SHR: Shurbs. Units (Frac. %). \n' +               
+              'TRE: Trees. Units (Frac. %). \n' +
+              'NPP: Net Primary Production (Kg C / m²) \n' + 
+              'AFGnpp: NPP of annual forbs and grass converted to aboveground biomass lbs/acre. \n' + 
+              'PFGnpp: NPP of perennial forbs and grass converted to aboveground biomass lbs/acre. \n' +
+              'SHRnpp: NPP of shrubs converted to aboveground biomass lbs/acre. \n' +               
+              'TREnpp: NPP of trees converted to aboveground biomass lbs/acre. \n' +
+              'LR: linear regression is a statistical model of the relationship between a dependend variable and one \n' + 
+              'or more independent variables. \n' + 
+              '\n' + 
+              'METHODOLOGY:  \n' +
+              'Predictive statisticical models based on LR were used to predict RAP variables based on year-to-year \n' + 
+              'datapoints from 1986-2014. First, a multiple linear regression (MLR) is used to predict annual RAP variables\n' + 
+              'from annually averaged PRISM variables. Six PRISM predictor variables were used: precipitation, \n' + 
+              'mean max/min temperature, mean dewpoint temperature, and mean max/min vapor pressure deficit. \n' + 
+              'asdYAYAYAflkasdfljk \n' + 
+              'OKokOKOKOKOKOKOKOK \n' + 
+              '\n' + 
+              'Citations: \n' + 
+              'Beck, H. E., Zimmermann, N. E., McVicar, T. R., Vergopolan, N., Berg, A., & Wood, E. F. (2018). \n' + 
+              'Present and future Köppen-Geiger climate classification maps at 1-km resolution. Scientific data, 5(1), 1-12. \n' + 
+              '\n' + 
+              'Peel, M. C., Finlayson, B. L., & McMahon, T. A. (2007). \n' + 
+              'Updated world map of the Köppen-Geiger climate classification. \n' + 
+              'Hydrology and earth system sciences, 11(5), 1633-1644. \n' + 
+              '\n' + 
+              'Thrasher, B., Xiong, J., Wang, W., Melton, F., Michaelis, A., & Nemani, R. (2013). \n' + 
+              'Downscaled climate projections suitable for resource management. \n' + 
+              'Eos, Transactions American Geophysical Union, 94(37), 321-323. \n' + 
+              '\n' + 
+              'Additional Notes: \n' +
+              'Use of the updated NEX-DCP30 for CMIP6 will be considered for this app \n' + 
+              'if/when it becomes available on Google Earth Engine. For an in-depth description of each climate \n' + 
+              'type, see wikipedia.org/wiki/Köppen_climate_classification';
 
 var infoLabelStyle = {
   height:'600px',
