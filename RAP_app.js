@@ -22,6 +22,13 @@ var prod_ic = ee.ImageCollection('projects/rap-data-365417/assets/npp-partitione
 var mat_ic = ee.ImageCollection('projects/rap-data-365417/assets/gridmet-MAT');
 var metric_strs = ['rmse', 'rsqr', 'rsqrA', 'Fconf', 'coeff', 'Tconf'];
 
+/////////////////////
+//Global widget vars
+var band_selection = 'PFG';
+var ic_selection = cover_ic;
+var type_selection = 'cov2000';
+/////////////////////
+
 var n = years_list.size();
 var k = ee.Number(6);
 var dof = n.subtract(k).subtract(1);
@@ -37,8 +44,8 @@ var dof = n.subtract(k).subtract(1);
 //5% = 2.024
 //10% = 1.686
 
-var im = cover_ic.first();
-var proj = im.projection().getInfo();
+var first_im = cover_ic.first();
+var proj = first_im.projection().getInfo();
 
 var transform = [
   proj['transform'][0],
@@ -58,7 +65,28 @@ var transform_new = [
   proj['transform'][5],
 ];
 
-var proj = im.projection();
+var proj = first_im.projection();
+
+var mat_ic_list = mat_ic.toList(999);
+var prod_ic_list = prod_ic.toList(999);
+
+function npp2biomass_fn(yr_idx){
+  var mat_im = ee.Image(mat_ic_list.get(yr_idx));
+  var rap_im = ee.Image(prod_ic_list.get(yr_idx));
+  var fANPP_im = mat_im.multiply(0.0129).add(0.171).rename('fANPP');
+  var agb_im = rap_im.multiply(0.0001) // NPP scalar 
+    .multiply(2.20462) // KgC to lbsC
+    .multiply(4046.86) // m2 to acres
+    .multiply(2.1276) // C to biomass
+    .multiply(fANPP_im);  // fraction of NPP aboveground
+  //var im = agb_im.setDefaultProjection('EPSG:4326', transform_new);
+  //var im = im.reproject({crs:proj.crs(), crsTransform:transform_new});
+  //var clip_im = ee.Image(im).clip(area_shp);
+  return agb_im;
+}
+
+var agb_ic = ee.ImageCollection(yr_idx_list.map(npp2biomass_fn));
+print(agb_ic);
 
 //PRISM STUFF
 
@@ -85,7 +113,6 @@ function yr_fn(yrobj){
 var clima_ic = ee.ImageCollection(years_list.map(yr_fn));
 
 
-
 function main_fn(band, rap_ic, out_im_type){
 
   function clip_fn(yrobj){
@@ -108,26 +135,12 @@ function main_fn(band, rap_ic, out_im_type){
     return npp_im;
   }
 
-  var mat_ic_list = mat_ic.toList(999);
-
-  function npp2biomass_fn(yr_idx){
-    var mat_im = ee.Image(mat_ic_list.get(yr_idx));
-    var rap_im = ee.Image(rap_ic_list.get(yr_idx));
-    var fANPP_im = mat_im.multiply(0.0129).add(0.171).rename('fANPP');
-    var agb_im = rap_im.multiply(0.0001) // NPP scalar 
-      .multiply(2.20462) // KgC to lbsC
-      .multiply(4046.86) // m2 to acres
-      .multiply(2.1276) // C to biomass
-      .multiply(fANPP_im)  // fraction of NPP aboveground
-    return agb_im;
-  }
-  
   if (band_selection.slice(3) == 'NPP'){
     var rap_ic = ee.ImageCollection(yr_idx_list.map(nppscaled2npp_fn));
   }
   
-  if (band_selection.slice(3) == 'ABG'){
-    var rap_ic = ee.ImageCollection(yr_idx_list.map(npp2biomass_fn));
+  if (band_selection.slice(3) == 'AGB'){
+    var rap_ic = agb_ic.select(band_selection.replace('AGB', 'NPP'));
   }
 
   var clima_ic_list = clima_ic.toList(999);
@@ -217,7 +230,7 @@ function main_fn(band, rap_ic, out_im_type){
     return coef_im.select('c2');
   }else if (out_im_type == 'Tconf'){
     return con_im;
-  }else if (out_im_type.slice(0, 7) == 'covpred' || out_im_type.slice(0, 7) == 'propred') || out_im_type.slice(0, 7) == 'agbpred'){
+  }else if (out_im_type.slice(0, 7) == 'covpred' || out_im_type.slice(0, 7) == 'propred'|| out_im_type.slice(0, 7) == 'agbpred'){
     var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
     var pred_ic_list = prediction_ic.toList(999);
     var year = ee.Number.parse(out_im_type.slice(7));
@@ -288,12 +301,15 @@ function main_fn(band, rap_ic, out_im_type){
 //END DeBugGing TEsTING dEbuGgINg tESTiNG TEsTiNG
 
 
+
 ///////////////////////
 ///////////////////////
 //USER INTERFACE
 ///////////////////////
 ///////////////////////
 
+//////////////////////
+//Styles
 
 //https://github.com/gee-community/ee-palettes
 var palettes = require('users/gena/packages:palettes');
@@ -307,6 +323,12 @@ var palettes = require('users/gena/packages:palettes');
 var rmseProVis = {
   min:0,
   max:200,
+  palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7]
+};
+
+var rmseBioVis = {
+  min:0,
+  max:20,
   palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7]
 };
 
@@ -334,7 +356,14 @@ var covVis = {
 var palettes = require('users/gena/packages:palettes');
 var proVis = {
   min:0,
-  max:800,
+  max:500,
+  palette:palettes.niccoli.cubicl[7]
+};
+
+var palettes = require('users/gena/packages:palettes');
+var bioVis = {
+  min:0,
+  max:80,
   palette:palettes.niccoli.cubicl[7]
 };
 
@@ -349,6 +378,13 @@ var palettes = require('users/gena/packages:palettes');
 var procoeffVis = {
   min:-5,
   max:5,
+  palette:palettes.colorbrewer.BrBG[7]
+};
+
+var palettes = require('users/gena/packages:palettes');
+var biocoeffVis = {
+  min:-0.5,
+  max:0.5,
   palette:palettes.colorbrewer.BrBG[7]
 };
 
@@ -373,6 +409,15 @@ var chartPanelStyle = {
   width:'400px',
   margin:'10px 10px'};
 
+
+///////////////////////
+//Global Widget Vars
+
+var palettes = require('users/gena/packages:palettes');
+var im_to_show = main_fn(band_selection, ic_selection, type_selection);
+var bandVis = covVis;
+Map.addLayer(im_to_show, bandVis);
+
 var main_panel = ui.Panel({
   layout:ui.Panel.Layout.flow('vertical'),
   style: {width: '300px'}
@@ -382,18 +427,8 @@ var legend_panel = ui.Panel({
   style:{position:'bottom-left', padding:'8px 15px'}
 });
 
-/////////////////////
-//Global widget vars
-
-var band_selection = 'PFG';
-var ic_selection = cover_ic;
-var type_selection = 'cov2000';
-var im_to_show = main_fn(band_selection, ic_selection, type_selection);
-var bandVis = covVis;
 var chart_panelA = ui.Panel({style:chartPanelStyle});
 var chart_panelB = ui.Panel({style:chartPanelStyle});
-
-Map.addLayer(im_to_show, bandVis);
 
 /////////////////
 //Legend funcion
@@ -507,7 +542,7 @@ function renderVariable(var_selection){
       var year = type_selection.slice(-4);
       type_selection = type_selection.replace('agb', 'cov').slice(0, -4).concat(year);
     }    
-  }else if (pro_bands.indexOf(band_selection) >= 0){
+  }else if (prod_bands.indexOf(band_selection) >= 0){
     ic_selection = prod_ic;
     bandVis = proVis;
     if (type_selection.slice(0, 3) == 'cov'){
@@ -545,6 +580,8 @@ function renderVariable(var_selection){
     bandVis = covcoeffVis;
   }else if (type_selection == 'coeff' && prod_bands.indexOf(band_selection) >= 0){
     bandVis = procoeffVis;
+  }else if (type_selection == 'coeff' && bio_bands.indexOf(band_selection) >= 0){
+    bandVis = biocoeffVis;
   }else if (type_selection == 'Tconf'){
     bandVis = confVis;
   }else if (type_selection.slice(0, 3) == 'cov'){
@@ -596,6 +633,8 @@ function renderMetric(metric_selection){
     bandVis = covcoeffVis;
   }else if (type_selection == 'coeff' && prod_bands.indexOf(band_selection) >= 0){
     bandVis = procoeffVis;
+  }else if (type_selection == 'coeff' && bio_bands.indexOf(band_selection) >= 0){
+    bandVis = biocoeffVis;
   }else if (type_selection == 'Tconf'){
     bandVis = confVis;
   }
@@ -908,4 +947,5 @@ var info_checkbox = ui.Checkbox({
 main_panel.add(info_checkbox);
 
 ui.root.add(main_panel);
+
 
