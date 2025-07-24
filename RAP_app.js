@@ -304,10 +304,11 @@ function main_fn(band, rap_ic, out_im_type){
       return ee.Image(coeff_im.select(coeff_str));
     }else{
       print('TREND COEFF');
-      var coeff_str = out_im_type.slice(-2);
+      var coeff_str = out_im_type.slice(-6);
       var coeff_idx = coeff_list.indexOf(coeff_str);
       var coeff_str = coeff_internal_list[coeff_idx];
-      Map.addLayer(ee.Image(coef_im.select(coeff_str)));
+      //Map.addLayer(ee.Image(coef_im.select(coeff_str)));
+      print(coeff_str);
       return ee.Image(coef_im.select(coeff_str));
     }
   }else if (out_im_type == 'Tconf'){
@@ -403,6 +404,7 @@ var rmseProVis = {
   palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7]
 };
 
+var palettes = require('users/gena/packages:palettes');
 var rmseBioVis = {
   min:0,
   max:250,
@@ -554,7 +556,7 @@ function makeLegend(){
   }else if ((type_selection.slice(0, 3) == 'agb') || (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0)){
     var lTitle = 'lbs/acre';
   }else{
-    var lTitle = ' (-)';
+    var lTitle = 'Slope (y/x)';
   }
 
   var legendTitle = ui.Label({
