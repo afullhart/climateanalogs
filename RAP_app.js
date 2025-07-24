@@ -20,15 +20,18 @@ var bio_bands = ['afgAGB', 'pfgAGB', 'shrAGB', 'treAGB'];
 var cover_ic = ee.ImageCollection('projects/rap-data-365417/assets/vegetation-cover-v3');
 var prod_ic = ee.ImageCollection('projects/rap-data-365417/assets/npp-partitioned-v3');
 var mat_ic = ee.ImageCollection('projects/rap-data-365417/assets/gridmet-MAT');
-var metric_strs = ['rmse', 'rsqr', 'rsqrA', 'Fconf', 'coeff', 'Tconf'];
+var metric_strs = ['rmse', 'rsqr', 'rsqrA', 'Fconf', 'Tconf'];
+var model_list = ['A1*pr + A2*tx + A3*tn + A4*td + A5*vx + A6*vn + K1', 'B1*pr + B2*tm + K2', 'C1*pr + K3'];
+var coeff_list = ['Atrend', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'B1', 'B2', 'C1', 'Ktrend', 'K1', 'K2', 'K3'];
 
-///////////////////////////////////////////
-//Global widget vars and main function args
+////////////////////////////
+//Global main function args
 var band_selection = 'PFG';
 var ic_selection = cover_ic;
 var type_selection = 'cov2000';
-/////////////////////
+////////////////////////////
 
+var model_selection = model_list[0];
 var n = years_list.size();
 var k = ee.Number(6);
 var dof = n.subtract(k).subtract(1);
@@ -103,6 +106,8 @@ function yr_fn(yrobj){
   var end = ee.Date.fromYMD(year.add(1), 1, 1);
   var precip_ic = prism_ic.filterDate(start, end).select('ppt');
   var precip_im = precip_ic.reduce(ee.Reducer.sum()).clip(area_shp);
+  var tmean_ic = prism_ic.filterDate(start, end).select('tmean');
+  var tmean_im = tmean_ic.reduce(ee.Reducer.mean()).clip(area_shp);
   var tmax_ic = prism_ic.filterDate(start, end).select('tmax');
   var tmax_im = tmax_ic.reduce(ee.Reducer.mean()).clip(area_shp);
   var tmin_ic = prism_ic.filterDate(start, end).select('tmin');
@@ -113,11 +118,12 @@ function yr_fn(yrobj){
   var vmin_im = vmin_ic.reduce(ee.Reducer.mean()).clip(area_shp);
   var vmax_ic = prism_ic.filterDate(start, end).select('vpdmin');
   var vmax_im = vmax_ic.reduce(ee.Reducer.mean()).clip(area_shp);
-  var year_im = precip_im.addBands(tmax_im).addBands(tmin_im).addBands(tdew_im).addBands(vmin_im).addBands(vmax_im);
+  var year_im = precip_im.addBands(tmean_im).addBands(tmax_im).addBands(tmin_im).addBands(tdew_im).addBands(vmin_im).addBands(vmax_im);
   return year_im;
 }
 
 var clima_ic = ee.ImageCollection(years_list.map(yr_fn));
+
 
 
 function main_fn(band, rap_ic, out_im_type){
@@ -164,26 +170,98 @@ function main_fn(band, rap_ic, out_im_type){
   }
   
   //Climate model statistics
-  var regr_ic = merge_ic.map(createConstantBand_fn);
-  var regr_ic = regr_ic.select(['constant', 'ppt_sum', 'tmax_mean', 'tmin_mean', 'tdmean_mean', 'vpdmax_mean', 'vpdmin_mean', band]);
-  var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:7, numY:1}));
-  var rmsr_im = regr_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
-  var rss_im = rmsr_im.pow(2).multiply(n);
-  var sSquare_im = rss_im.divide(dof);
-  var yVariance_im = merge_ic.select(band).reduce(ee.Reducer.sampleVariance());
-  var rSquare_im = ee.Image(1).subtract(ee.Image(rss_im.divide(yVariance_im.multiply(n.subtract(1)))));
-  var rSquareAdj_im = ee.Image(1).subtract(sSquare_im.divide(yVariance_im));
-  var coeff_im = regr_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7']]);
-  var top_im = rSquare_im.divide(k);
-  var bot_im = ee.Image(ee.Image(1).subtract(rSquare_im)).divide(n.subtract(k).subtract(1));
-  var f_im = top_im.divide(bot_im);
-  var zero_im = rmsr_im.lt(0.0);
-  var ninenine_im = zero_im.where(f_im.gte(3.630), 1);
-  var ninefive_im = zero_im.where(f_im.gte(2.503), 1);
-  var ninezero_im = zero_im.where(f_im.gte(2.030), 1);
-  var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
-  var mlr_im = rmsr_im.addBands(rSquareAdj_im).addBands(coeff_im);
-
+  if (model_selection == model_list[0]){
+    print('MODEL ZERO!')
+    var regr_ic = merge_ic.map(createConstantBand_fn);
+    var regr_ic = regr_ic.select(['constant', 'ppt_sum', 'tmax_mean', 'tmin_mean', 'tdmean_mean', 'vpdmax_mean', 'vpdmin_mean', band]);
+    var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:7, numY:1}));
+    var rmsr_im = regr_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
+    var rss_im = rmsr_im.pow(2).multiply(n);
+    var sSquare_im = rss_im.divide(dof);
+    var yVariance_im = merge_ic.select(band).reduce(ee.Reducer.sampleVariance());
+    var rSquare_im = ee.Image(1).subtract(ee.Image(rss_im.divide(yVariance_im.multiply(n.subtract(1)))));
+    var rSquareAdj_im = ee.Image(1).subtract(sSquare_im.divide(yVariance_im));
+    var coeff_im = regr_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7']]);
+    var top_im = rSquare_im.divide(k);
+    var bot_im = ee.Image(ee.Image(1).subtract(rSquare_im)).divide(n.subtract(k).subtract(1));
+    var f_im = top_im.divide(bot_im);
+    var zero_im = rmsr_im.lt(0.0);
+    var ninenine_im = zero_im.where(f_im.gte(3.630), 1);
+    var ninefive_im = zero_im.where(f_im.gte(2.503), 1);
+    var ninezero_im = zero_im.where(f_im.gte(2.030), 1);
+    var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
+    var mlr_im = rmsr_im.addBands(rSquareAdj_im).addBands(coeff_im);
+    function prediction_fn(imobj){
+      var cli_im = ee.Image(imobj);
+      var c1 = mlr_im.select('c1');
+      var c2 = cli_im.select('ppt_sum').multiply(mlr_im.select('c2'));
+      var c3 = cli_im.select('tmax_mean').multiply(mlr_im.select('c3'));
+      var c4 = cli_im.select('tmin_mean').multiply(mlr_im.select('c4'));
+      var c5 = cli_im.select('tdmean_mean').multiply(mlr_im.select('c5'));
+      var c6 = cli_im.select('vpdmax_mean').multiply(mlr_im.select('c6'));
+      var c7 = cli_im.select('vpdmin_mean').multiply(mlr_im.select('c7'));
+      var pred_im = c1.add(c2).add(c3).add(c4).add(c5).add(c6).add(c7);
+      return pred_im;
+    }
+  }else if (model_selection == model_list[1]){
+    print('MODEL ONE!')
+    var regr_ic = merge_ic.map(createConstantBand_fn);
+    var regr_ic = regr_ic.select(['constant', 'ppt_sum', 'tmean_mean', band]);
+    var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:3, numY:1}));
+    var rmsr_im = regr_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
+    var rss_im = rmsr_im.pow(2).multiply(n);
+    var sSquare_im = rss_im.divide(dof);
+    var yVariance_im = merge_ic.select(band).reduce(ee.Reducer.sampleVariance());
+    var rSquare_im = ee.Image(1).subtract(ee.Image(rss_im.divide(yVariance_im.multiply(n.subtract(1)))));
+    var rSquareAdj_im = ee.Image(1).subtract(sSquare_im.divide(yVariance_im));
+    var coeff_im = regr_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2', 'c3']]);
+    var top_im = rSquare_im.divide(k);
+    var bot_im = ee.Image(ee.Image(1).subtract(rSquare_im)).divide(n.subtract(k).subtract(1));
+    var f_im = top_im.divide(bot_im);
+    var zero_im = rmsr_im.lt(0.0);
+    var ninenine_im = zero_im.where(f_im.gte(3.630), 1);
+    var ninefive_im = zero_im.where(f_im.gte(2.503), 1);
+    var ninezero_im = zero_im.where(f_im.gte(2.030), 1);
+    var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
+    var mlr_im = rmsr_im.addBands(rSquareAdj_im).addBands(coeff_im); 
+    function prediction_fn(imobj){
+      var cli_im = ee.Image(imobj);
+      var c1 = mlr_im.select('c1');
+      var c2 = cli_im.select('ppt_sum').multiply(mlr_im.select('c2'));
+      var c3 = cli_im.select('tmean_mean').multiply(mlr_im.select('c3'));
+      var pred_im = c1.add(c2).add(c3);
+      return pred_im;
+    }
+  }else if (model_selection == model_list[2]){
+    print('MODEL TWO!')
+    var regr_ic = merge_ic.map(createConstantBand_fn);
+    var regr_ic = regr_ic.select(['constant', 'ppt_sum', band]);
+    var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:2, numY:1}));
+    var rmsr_im = regr_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
+    var rss_im = rmsr_im.pow(2).multiply(n);
+    var sSquare_im = rss_im.divide(dof);
+    var yVariance_im = merge_ic.select(band).reduce(ee.Reducer.sampleVariance());
+    var rSquare_im = ee.Image(1).subtract(ee.Image(rss_im.divide(yVariance_im.multiply(n.subtract(1)))));
+    var rSquareAdj_im = ee.Image(1).subtract(sSquare_im.divide(yVariance_im));
+    var coeff_im = regr_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2']]);
+    var top_im = rSquare_im.divide(k);
+    var bot_im = ee.Image(ee.Image(1).subtract(rSquare_im)).divide(n.subtract(k).subtract(1));
+    var f_im = top_im.divide(bot_im);
+    var zero_im = rmsr_im.lt(0.0);
+    var ninenine_im = zero_im.where(f_im.gte(3.630), 1);
+    var ninefive_im = zero_im.where(f_im.gte(2.503), 1);
+    var ninezero_im = zero_im.where(f_im.gte(2.030), 1);
+    var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
+    var mlr_im = rmsr_im.addBands(rSquareAdj_im).addBands(coeff_im);
+    function prediction_fn(imobj){
+      var cli_im = ee.Image(imobj);
+      var c1 = mlr_im.select('c1');
+      var c2 = cli_im.select('ppt_sum').multiply(mlr_im.select('c2'));
+      var pred_im = c1.add(c2);
+      return pred_im;
+    }
+  }
+  
   //Trend model statistics
   function merg_bands_fn(iobj){
     var i = ee.Number(iobj);
@@ -208,19 +286,6 @@ function main_fn(band, rap_ic, out_im_type){
   var ninezer_im = zer_im.where(t_im.gte(1.686), 1);
   var con_im = zer_im.add(ninenin_im).add(ninefiv_im).add(ninezer_im);
 
-  function prediction_fn(imobj){
-    var cli_im = ee.Image(imobj);
-    var c1 = mlr_im.select('c1');
-    var c2 = cli_im.select('ppt_sum').multiply(mlr_im.select('c2'));
-    var c3 = cli_im.select('tmax_mean').multiply(mlr_im.select('c3'));
-    var c4 = cli_im.select('tmin_mean').multiply(mlr_im.select('c4'));
-    var c5 = cli_im.select('tdmean_mean').multiply(mlr_im.select('c5'));
-    var c6 = cli_im.select('vpdmin_mean').multiply(mlr_im.select('c6'));
-    var c7 = cli_im.select('vpdmax_mean').multiply(mlr_im.select('c7'));
-    var pred_im = c1.add(c2).add(c3).add(c4).add(c5).add(c6).add(c7);
-    return pred_im;
-  }
-
   if (out_im_type == 'rmse'){
     return rmsr_im;
   }else if (out_im_type == 'rsqr'){
@@ -229,7 +294,7 @@ function main_fn(band, rap_ic, out_im_type){
     return rSquareAdj_im;
   }else if (out_im_type == 'Fconf'){
     return conf_im;
-  }else if (out_im_type == 'coeff'){
+  }else if (out_im_type[] == 'coeff'){
     return coef_im.select('c2');
   }else if (out_im_type == 'Tconf'){
     return con_im;
@@ -544,6 +609,27 @@ function makeLegend(){
 
   Map.add(legend_panel);
 }
+
+//////////////////////
+//Change Climate Model
+
+function renderModel(model_string){
+  Map.layers().reset();
+  model_selection = model_string;
+  var im_to_show = main_fn(band_selection, ic_selection, type_selection);
+  Map.addLayer(im_to_show, bandVis);
+  makeLegend();
+}
+
+var model_dropdown = ui.Select({
+  items:model_list, 
+  placeholder:'Select Climate Regr. Model', 
+  onChange:renderModel,
+  style:widgetStyle
+});
+
+main_panel.add(model_dropdown);
+
 
 /////////////////////
 //Change RAP Variable
