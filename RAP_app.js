@@ -511,16 +511,16 @@ var textPanelStyle = {
 
 var coeff_map = {};
 
-coeff_map[coeff_list[0]] = {min:0, max:20};
-coeff_map[coeff_list[1]] = {min:0, max:10};
-coeff_map[coeff_list[2]] = {min:0, max:10};
-coeff_map[coeff_list[3]] = {min:0, max:10};
+coeff_map[coeff_list[0]] = {min:-0.5, max:0.5};
+coeff_map[coeff_list[1]] = {min:-0.5, max:0.5};
+coeff_map[coeff_list[2]] = {min:-10, max:10};
+coeff_map[coeff_list[3]] = {min:-20, max:20};
 coeff_map[coeff_list[4]] = {min:-10, max:10};
 coeff_map[coeff_list[5]] = {min:-5, max:5};
 coeff_map[coeff_list[6]] = {min:-50, max:50};
-coeff_map[coeff_list[7]] = {min:0, max:0.5};
+coeff_map[coeff_list[7]] = {min:-0.5, max:0.5};
 coeff_map[coeff_list[8]] = {min:-10, max:10};
-coeff_map[coeff_list[9]] = {min:0, max:0.5};
+coeff_map[coeff_list[9]] = {min:-0.5, max:0.5};
 coeff_map[coeff_list[10]] = {min:-10, max:50};
 coeff_map[coeff_list[11]] = {min:-100, max:100};
 coeff_map[coeff_list[12]] = {min:-100, max:100};
@@ -568,8 +568,10 @@ function makeLegend(){
     var lTitle = 'frac. %';
   }else if ((type_selection.slice(0, 3) == 'pro') || (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0)){
     var lTitle = 'KgC/acre';
-  }else if ((type_selection.slice(0, 3) == 'agb') || (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0)){
+  }else if ((type_selection.slice(0, 3) == 'agb') || (type_selection == 'rmse' && bio_bands.indexOf(band_selection) >= 0)){
     var lTitle = 'lbs/acre';
+  }else if (type_selection.indexOf('coeffK') >= 0){
+    var lTitle = 'Intercept (y)';
   }else{
     var lTitle = 'Slope (y/x)';
   }
@@ -789,13 +791,13 @@ main_panel.add(metric_dropdown);
 function renderCoeff(coeff_str){
   Map.layers().reset();
   type_selection = 'coeff'.concat(coeff_str);
-  var coeff_str = type_selection.slice(5);
   print(coeff_str);
   var im_max = coeff_map[coeff_str]['max'];
   var im_min = coeff_map[coeff_str]['min'];
   print(im_max);
   var palettes = require('users/gena/packages:palettes');
   bandVis = {min:im_min, max:im_max, palette:palettes.colorbrewer.BrBG[7]};
+  var im_to_show = main_fn(band_selection, ic_selection, type_selection);
   Map.addLayer(im_to_show, bandVis);
   makeLegend();
 }
