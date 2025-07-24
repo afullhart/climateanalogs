@@ -23,6 +23,7 @@ var mat_ic = ee.ImageCollection('projects/rap-data-365417/assets/gridmet-MAT');
 var metric_strs = ['rmse', 'rsqr', 'rsqrA', 'Fconf', 'Tconf'];
 var model_list = ['A1*pr + A2*tx + A3*tn + A4*td + A5*vx + A6*vn + K1', 'B1*pr + B2*tm + K2', 'C1*pr + K3'];
 var coeff_list = ['Atrend', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'B1', 'B2', 'C1', 'Ktrend', 'K1', 'K2', 'K3'];
+var coeff_internal_list = ['c2', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c2', 'c3', 'c2', 'c1', 'c1', 'c1', 'c1'];
 
 ////////////////////////////
 //Global main function args
@@ -294,8 +295,21 @@ function main_fn(band, rap_ic, out_im_type){
     return rSquareAdj_im;
   }else if (out_im_type == 'Fconf'){
     return conf_im;
-  }else if (out_im_type[] == 'coeff'){
-    return coef_im.select('c2');
+  }else if (out_im_type.slice(0, 5) == 'coeff'){
+    if (out_im_type.indexOf('trend') < 0){
+      print('CLI COEFF');
+      var coeff_str = out_im_type.slice(-2);
+      var coeff_idx = coeff_list.indexOf(coeff_str);
+      var coeff_str = coeff_internal_list[coeff_idx];
+      return ee.Image(coeff_im.select(coeff_str));
+    }else{
+      print('TREND COEFF');
+      var coeff_str = out_im_type.slice(-2);
+      var coeff_idx = coeff_list.indexOf(coeff_str);
+      var coeff_str = coeff_internal_list[coeff_idx];
+      Map.addLayer(ee.Image(coef_im.select(coeff_str)));
+      return ee.Image(coef_im.select(coeff_str));
+    }
   }else if (out_im_type == 'Tconf'){
     return con_im;
   }else if (out_im_type.slice(0, 7) == 'covpred' || out_im_type.slice(0, 7) == 'propred'|| out_im_type.slice(0, 7) == 'agbpred'){
@@ -630,7 +644,6 @@ var model_dropdown = ui.Select({
 
 main_panel.add(model_dropdown);
 
-
 /////////////////////
 //Change RAP Variable
 
@@ -684,11 +697,11 @@ function renderVariable(var_selection){
     bandVis = rsqrAdjVis;
   }else if (type_selection == 'Fconf'){
     bandVis = confVis;
-  }else if (type_selection == 'coeff' && cover_bands.indexOf(band_selection) >= 0){
+  }else if (type_selection.indexOf('coeff') >= 0 && cover_bands.indexOf(band_selection) >= 0){
     bandVis = covcoeffVis;
-  }else if (type_selection == 'coeff' && prod_bands.indexOf(band_selection) >= 0){
+  }else if (type_selection.indexOf('coeff') >= 0 && prod_bands.indexOf(band_selection) >= 0){
     bandVis = procoeffVis;
-  }else if (type_selection == 'coeff' && bio_bands.indexOf(band_selection) >= 0){
+  }else if (type_selection.indexOf('coeff') >= 0 && bio_bands.indexOf(band_selection) >= 0){
     bandVis = biocoeffVis;
   }else if (type_selection == 'Tconf'){
     bandVis = confVis;
@@ -737,12 +750,6 @@ function renderMetric(metric_selection){
     bandVis = rsqrAdjVis;
   }else if (type_selection == 'Fconf'){
     bandVis = confVis;
-  }else if (type_selection == 'coeff' && cover_bands.indexOf(band_selection) >= 0){
-    bandVis = covcoeffVis;
-  }else if (type_selection == 'coeff' && prod_bands.indexOf(band_selection) >= 0){
-    bandVis = procoeffVis;
-  }else if (type_selection == 'coeff' && bio_bands.indexOf(band_selection) >= 0){
-    bandVis = biocoeffVis;
   }else if (type_selection == 'Tconf'){
     bandVis = confVis;
   }
@@ -759,7 +766,34 @@ var metric_dropdown = ui.Select({
 
 main_panel.add(metric_dropdown);
 
-/////////////////////
+///////////////////////////
+//Render Coefficient Layer
+
+function renderCoeff(coeff_str){
+  Map.layers().reset();
+  type_selection = 'coeff'.concat(coeff_str);
+  if (cover_bands.indexOf(band_selection) >= 0){
+    bandVis = covcoeffVis;
+  }else if (prod_bands.indexOf(band_selection) >= 0){
+    bandVis = procoeffVis;
+  }else if (bio_bands.indexOf(band_selection) >= 0){
+    bandVis = biocoeffVis;
+  }
+  var im_to_show = main_fn(band_selection, ic_selection, type_selection);
+  Map.addLayer(im_to_show, bandVis);
+  makeLegend();
+}
+
+var coeff_dropdown = ui.Select({
+  items:coeff_list, 
+  placeholder:'Select Coefficient Term', 
+  onChange:renderCoeff,
+  style:widgetStyle
+});
+
+main_panel.add(coeff_dropdown);
+
+///////////////////
 //Render RAP Layer
 
 function renderYearA(year_selection){
@@ -792,7 +826,7 @@ var year_dropdownA = ui.Select({
 
 main_panel.add(year_dropdownA);
 
-////////////////////////
+/////////////////////////
 //Render Predicted Layer
 
 function renderYearB(year_selection){
@@ -825,7 +859,7 @@ var year_dropdownB = ui.Select({
 
 main_panel.add(year_dropdownB);
 
-/////////////////////////
+//////////////////////////
 //Render One-to-One Chart
 
 function makePlotA(plot_ic, point_geo){
@@ -892,7 +926,7 @@ var OnetoOne_checkbox = ui.Checkbox({
 
 main_panel.add(OnetoOne_checkbox);
 
-/////////////////////////
+/////////////////////
 //Render Trend Chart
 
 function makePlotB(rap_ic, point_geo){
@@ -954,7 +988,7 @@ var trend_checkbox = ui.Checkbox({
 
 main_panel.add(trend_checkbox);
 
-/////////////////////
+//////////////////
 //Render info box
 
 var info_str = 'OVERVIEW: \n' +
