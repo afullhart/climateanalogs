@@ -22,8 +22,8 @@ var prod_ic = ee.ImageCollection('projects/rap-data-365417/assets/npp-partitione
 var mat_ic = ee.ImageCollection('projects/rap-data-365417/assets/gridmet-MAT');
 var metric_strs = ['rmse', 'rsqr', 'rsqrA', 'Fconf', 'coeff', 'Tconf'];
 
-/////////////////////
-//Global widget vars
+///////////////////////////////////////////
+//Global widget vars and main function args
 var band_selection = 'PFG';
 var ic_selection = cover_ic;
 var type_selection = 'cov2000';
@@ -109,9 +109,9 @@ function yr_fn(yrobj){
   var tmin_im = tmin_ic.reduce(ee.Reducer.mean()).clip(area_shp);
   var tdew_ic = prism_ic.filterDate(start, end).select('tdmean');
   var tdew_im = tdew_ic.reduce(ee.Reducer.mean()).clip(area_shp);
-  var vmin_ic = prism_ic.filterDate(start, end).select('vpdmin');
+  var vmin_ic = prism_ic.filterDate(start, end).select('vpdmax');
   var vmin_im = vmin_ic.reduce(ee.Reducer.mean()).clip(area_shp);
-  var vmax_ic = prism_ic.filterDate(start, end).select('vpdmax');
+  var vmax_ic = prism_ic.filterDate(start, end).select('vpdmin');
   var vmax_im = vmax_ic.reduce(ee.Reducer.mean()).clip(area_shp);
   var year_im = precip_im.addBands(tmax_im).addBands(tmin_im).addBands(tdew_im).addBands(vmin_im).addBands(vmax_im);
   return year_im;
@@ -165,7 +165,7 @@ function main_fn(band, rap_ic, out_im_type){
   
   //Climate model statistics
   var regr_ic = merge_ic.map(createConstantBand_fn);
-  var regr_ic = regr_ic.select(['constant', 'ppt_sum', 'tmax_mean', 'tmin_mean', 'tdmean_mean', 'vpdmin_mean', 'vpdmax_mean', band]);
+  var regr_ic = regr_ic.select(['constant', 'ppt_sum', 'tmax_mean', 'tmin_mean', 'tdmean_mean', 'vpdmax_mean', 'vpdmin_mean', band]);
   var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:7, numY:1}));
   var rmsr_im = regr_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
   var rss_im = rmsr_im.pow(2).multiply(n);
@@ -405,6 +405,29 @@ var chartPanelStyle = {
   stretch:'vertical',
   height:'400px',
   width:'400px',
+  margin:'10px 10px'};
+
+var infoLabelStyle = {
+  height:'600px',
+  width:'500px',
+  position:'bottom-center',
+  whiteSpace:'pre',
+  padding:'1px',
+  margin:'2px',
+  textAlign:'left',
+  fontSize:'12px'
+};
+
+var infoCheckStyle = {
+  position:'top-left',
+  fontSize:'12px'
+};
+
+var textPanelStyle = {
+  position:'bottom-center', 
+  stretch:'vertical',
+  height:'600px',
+  width:'600px',
   margin:'10px 10px'};
 
 /////////////////////
@@ -900,31 +923,6 @@ var info_str = 'OVERVIEW: \n' +
               'if/when it becomes available on Google Earth Engine. For an in-depth description of each climate \n' + 
               'type, see wikipedia.org/wiki/Köppen_climate_classification';
 
-var infoLabelStyle = {
-  height:'600px',
-  width:'500px',
-  position:'bottom-center',
-  whiteSpace:'pre',
-  padding:'1px',
-  margin:'2px',
-  textAlign:'left',
-  fontSize:'12px'
-};
-
-var infoCheckStyle = {
-  position:'top-left',
-  fontSize:'12px'
-};
-
-var textPanelStyle = {
-  position:'bottom-center', 
-  stretch:'vertical',
-  height:'600px',
-  width:'600px',
-  margin:'10px 10px'};
-
-var text_box = ui.Label({value:info_str, style:infoLabelStyle});
-var text_panel = ui.Panel({widgets:null, layout:null, style:textPanelStyle});
 
 function render_infobox(bool_obj){
   if (bool_obj === true){
