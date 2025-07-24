@@ -172,7 +172,6 @@ function main_fn(band, rap_ic, out_im_type){
   
   //Climate model statistics
   if (model_selection == model_list[0]){
-    print('MODEL ZERO!')
     var regr_ic = merge_ic.map(createConstantBand_fn);
     var regr_ic = regr_ic.select(['constant', 'ppt_sum', 'tmax_mean', 'tmin_mean', 'tdmean_mean', 'vpdmax_mean', 'vpdmin_mean', band]);
     var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:7, numY:1}));
@@ -205,7 +204,6 @@ function main_fn(band, rap_ic, out_im_type){
       return pred_im;
     }
   }else if (model_selection == model_list[1]){
-    print('MODEL ONE!')
     var regr_ic = merge_ic.map(createConstantBand_fn);
     var regr_ic = regr_ic.select(['constant', 'ppt_sum', 'tmean_mean', band]);
     var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:3, numY:1}));
@@ -234,7 +232,6 @@ function main_fn(band, rap_ic, out_im_type){
       return pred_im;
     }
   }else if (model_selection == model_list[2]){
-    print('MODEL TWO!')
     var regr_ic = merge_ic.map(createConstantBand_fn);
     var regr_ic = regr_ic.select(['constant', 'ppt_sum', band]);
     var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:2, numY:1}));
@@ -299,6 +296,7 @@ function main_fn(band, rap_ic, out_im_type){
     if (out_im_type.indexOf('trend') < 0){
       print('CLI COEFF');
       var coeff_str = out_im_type.slice(-2);
+      print(coeff_str);
       var coeff_idx = coeff_list.indexOf(coeff_str);
       var coeff_str = coeff_internal_list[coeff_idx];
       return ee.Image(coeff_im.select(coeff_str));
@@ -511,8 +509,25 @@ var textPanelStyle = {
   width:'600px',
   margin:'10px 10px'};
 
-/////////////////////
-//Global Widget Vars
+var coeff_map = {};
+
+coeff_map[coeff_list[0]] = {min:0, max:20};
+coeff_map[coeff_list[1]] = {min:0, max:10};
+coeff_map[coeff_list[2]] = {min:0, max:10};
+coeff_map[coeff_list[3]] = {min:0, max:10};
+coeff_map[coeff_list[4]] = {min:-10, max:10};
+coeff_map[coeff_list[5]] = {min:-5, max:5};
+coeff_map[coeff_list[6]] = {min:-50, max:50};
+coeff_map[coeff_list[7]] = {min:0, max:0.5};
+coeff_map[coeff_list[8]] = {min:-10, max:10};
+coeff_map[coeff_list[9]] = {min:0, max:0.5};
+coeff_map[coeff_list[10]] = {min:-10, max:50};
+coeff_map[coeff_list[11]] = {min:-100, max:100};
+coeff_map[coeff_list[12]] = {min:-100, max:100};
+coeff_map[coeff_list[13]] = {min:-100, max:100};
+
+/////////////////////////////////////////
+//Global Widget Vars and Initial Display
 
 var palettes = require('users/gena/packages:palettes');
 var im_to_show = main_fn(band_selection, ic_selection, type_selection);
@@ -774,14 +789,13 @@ main_panel.add(metric_dropdown);
 function renderCoeff(coeff_str){
   Map.layers().reset();
   type_selection = 'coeff'.concat(coeff_str);
-  if (cover_bands.indexOf(band_selection) >= 0){
-    bandVis = covcoeffVis;
-  }else if (prod_bands.indexOf(band_selection) >= 0){
-    bandVis = procoeffVis;
-  }else if (bio_bands.indexOf(band_selection) >= 0){
-    bandVis = biocoeffVis;
-  }
-  var im_to_show = main_fn(band_selection, ic_selection, type_selection);
+  var coeff_str = type_selection.slice(5);
+  print(coeff_str);
+  var im_max = coeff_map[coeff_str]['max'];
+  var im_min = coeff_map[coeff_str]['min'];
+  print(im_max);
+  var palettes = require('users/gena/packages:palettes');
+  bandVis = {min:im_min, max:im_max, palette:palettes.colorbrewer.BrBG[7]};
   Map.addLayer(im_to_show, bandVis);
   makeLegend();
 }
@@ -946,7 +960,7 @@ function makePlotB(rap_ic, point_geo){
     title:'Trend',
     titleTextStyle:{italic:false, bold:true, fontSize:26},
     legend:{position:'top-right'},
-    hAxis:{title:'Year', format:'####', titleTextStyle:{italic:false, bold:true, fontSize:21}, gridlines:{count:6}},
+    hAxis:{title:'Years (1986-2024)', format:'####', titleTextStyle:{italic:false, bold:true, fontSize:21}, gridlines:{count:6}},
     vAxis:{title:'RAP', titleTextStyle:{italic:false, bold:true, fontSize:21}, gridlines:{count:6}},
     colors:['#6a9f58'],
     pointSize:12,
@@ -1045,6 +1059,8 @@ var info_str = 'OVERVIEW: \n' +
               'if/when it becomes available on Google Earth Engine. For an in-depth description of each climate \n' + 
               'type, see wikipedia.org/wiki/Köppen_climate_classification';
 
+var text_box = ui.Label({value:info_str, style:infoLabelStyle});
+var text_panel = ui.Panel({widgets:null, layout:null, style:textPanelStyle});
 
 function render_infobox(bool_obj){
   if (bool_obj === true){
