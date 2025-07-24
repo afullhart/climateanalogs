@@ -444,27 +444,6 @@ var bioVis = {
   palette:palettes.niccoli.cubicl[7]
 };
 
-var palettes = require('users/gena/packages:palettes');
-var covcoeffVis = {
-  min:-0.2,
-  max:0.2,
-  palette:palettes.colorbrewer.BrBG[7]
-};
-
-var palettes = require('users/gena/packages:palettes');
-var procoeffVis = {
-  min:-5,
-  max:5,
-  palette:palettes.colorbrewer.BrBG[7]
-};
-
-var palettes = require('users/gena/packages:palettes');
-var biocoeffVis = {
-  min:-2.0,
-  max:2.0,
-  palette:palettes.colorbrewer.BrBG[7]
-};
-
 var confVis = {
   min:0,
   max:3,
@@ -509,22 +488,58 @@ var textPanelStyle = {
   width:'600px',
   margin:'10px 10px'};
 
-var coeff_map = {};
+var covcoeff_map = {};
 
-coeff_map[coeff_list[0]] = {min:-0.5, max:0.5};
-coeff_map[coeff_list[1]] = {min:-0.5, max:0.5};
-coeff_map[coeff_list[2]] = {min:-10, max:10};
-coeff_map[coeff_list[3]] = {min:-20, max:20};
-coeff_map[coeff_list[4]] = {min:-10, max:10};
-coeff_map[coeff_list[5]] = {min:-5, max:5};
-coeff_map[coeff_list[6]] = {min:-50, max:50};
-coeff_map[coeff_list[7]] = {min:-0.5, max:0.5};
-coeff_map[coeff_list[8]] = {min:-10, max:10};
-coeff_map[coeff_list[9]] = {min:-0.5, max:0.5};
-coeff_map[coeff_list[10]] = {min:-10, max:50};
-coeff_map[coeff_list[11]] = {min:-100, max:100};
-coeff_map[coeff_list[12]] = {min:-100, max:100};
-coeff_map[coeff_list[13]] = {min:-100, max:100};
+covcoeff_map[coeff_list[0]] = {min:-0.5, max:0.5};
+covcoeff_map[coeff_list[1]] = {min:-0.1, max:0.1};
+covcoeff_map[coeff_list[2]] = {min:-10, max:10};
+covcoeff_map[coeff_list[3]] = {min:-20, max:20};
+covcoeff_map[coeff_list[4]] = {min:-10, max:10};
+covcoeff_map[coeff_list[5]] = {min:-5, max:5};
+covcoeff_map[coeff_list[6]] = {min:-50, max:50};
+covcoeff_map[coeff_list[7]] = {min:-0.1, max:0.1};
+covcoeff_map[coeff_list[8]] = {min:-10, max:10};
+covcoeff_map[coeff_list[9]] = {min:-0.1, max:0.1};
+covcoeff_map[coeff_list[10]] = {min:-10, max:50};
+covcoeff_map[coeff_list[11]] = {min:-100, max:100};
+covcoeff_map[coeff_list[12]] = {min:-100, max:100};
+covcoeff_map[coeff_list[13]] = {min:-100, max:100};
+
+var procoeff_map = {};
+
+procoeff_map[coeff_list[0]] = {min:-5, max:5};
+procoeff_map[coeff_list[1]] = {min:-1, max:1};
+procoeff_map[coeff_list[2]] = {min:-100, max:100};
+procoeff_map[coeff_list[3]] = {min:-200, max:200};
+procoeff_map[coeff_list[4]] = {min:-100, max:100};
+procoeff_map[coeff_list[5]] = {min:-50, max:50};
+procoeff_map[coeff_list[6]] = {min:-500, max:500};
+procoeff_map[coeff_list[7]] = {min:-1, max:1};
+procoeff_map[coeff_list[8]] = {min:-100, max:100};
+procoeff_map[coeff_list[9]] = {min:-1, max:1};
+procoeff_map[coeff_list[10]] = {min:-100, max:500};
+procoeff_map[coeff_list[11]] = {min:-1000, max:1000};
+procoeff_map[coeff_list[12]] = {min:-1000, max:1000};
+procoeff_map[coeff_list[13]] = {min:-1000, max:1000};
+
+var biocoeff_map = {};
+
+biocoeff_map[coeff_list[0]] = {min:-5, max:5};
+biocoeff_map[coeff_list[1]] = {min:-1, max:1};
+biocoeff_map[coeff_list[2]] = {min:-100, max:100};
+biocoeff_map[coeff_list[3]] = {min:-200, max:200};
+biocoeff_map[coeff_list[4]] = {min:-100, max:100};
+biocoeff_map[coeff_list[5]] = {min:-50, max:50};
+biocoeff_map[coeff_list[6]] = {min:-500, max:500};
+biocoeff_map[coeff_list[7]] = {min:-1, max:1};
+biocoeff_map[coeff_list[8]] = {min:-100, max:100};
+biocoeff_map[coeff_list[9]] = {min:-1, max:1};
+biocoeff_map[coeff_list[10]] = {min:-100, max:500};
+biocoeff_map[coeff_list[11]] = {min:-1000, max:1000};
+biocoeff_map[coeff_list[12]] = {min:-1000, max:1000};
+biocoeff_map[coeff_list[13]] = {min:-1000, max:1000};
+
+
 
 /////////////////////////////////////////
 //Global Widget Vars and Initial Display
@@ -717,11 +732,23 @@ function renderVariable(var_selection){
   }else if (type_selection == 'Fconf'){
     bandVis = confVis;
   }else if (type_selection.indexOf('coeff') >= 0 && cover_bands.indexOf(band_selection) >= 0){
-    bandVis = covcoeffVis;
+    var coeff_str = type_selection.slice(5);
+    var im_max = covcoeff_map[coeff_str]['max'];
+    var im_min = covcoeff_map[coeff_str]['min'];
+    var palettes = require('users/gena/packages:palettes');
+    bandVis = {min:im_min, max:im_max, palette:palettes.colorbrewer.BrBG[7]};
   }else if (type_selection.indexOf('coeff') >= 0 && prod_bands.indexOf(band_selection) >= 0){
-    bandVis = procoeffVis;
+    var coeff_str = type_selection.slice(5);
+    var im_max = procoeff_map[coeff_str]['max'];
+    var im_min = procoeff_map[coeff_str]['min'];
+    var palettes = require('users/gena/packages:palettes');
+    bandVis = {min:im_min, max:im_max, palette:palettes.colorbrewer.BrBG[7]};
   }else if (type_selection.indexOf('coeff') >= 0 && bio_bands.indexOf(band_selection) >= 0){
-    bandVis = biocoeffVis;
+    var coeff_str = type_selection.slice(5);
+    var im_max = biocoeff_map[coeff_str]['max'];
+    var im_min = biocoeff_map[coeff_str]['min'];
+    var palettes = require('users/gena/packages:palettes');
+    bandVis = {min:im_min, max:im_max, palette:palettes.colorbrewer.BrBG[7]};
   }else if (type_selection == 'Tconf'){
     bandVis = confVis;
   }else if (type_selection.slice(0, 3) == 'cov'){
@@ -792,9 +819,15 @@ function renderCoeff(coeff_str){
   Map.layers().reset();
   type_selection = 'coeff'.concat(coeff_str);
   print(coeff_str);
+  if (cover_bands.indexOf(band_selection) >= 0){
+    var coeff_map = covcoeff_map;
+  }else if (prod_bands.indexOf(band_selection) >= 0){
+    var coeff_map = procoeff_map;
+  }else if (bio_bands.indexOf(band_selection) >= 0){
+    var coeff_map = biocoeff_map;    
+  }
   var im_max = coeff_map[coeff_str]['max'];
   var im_min = coeff_map[coeff_str]['min'];
-  print(im_max);
   var palettes = require('users/gena/packages:palettes');
   bandVis = {min:im_min, max:im_max, palette:palettes.colorbrewer.BrBG[7]};
   var im_to_show = main_fn(band_selection, ic_selection, type_selection);
