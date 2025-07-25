@@ -190,17 +190,18 @@ function main_fn(band, rap_ic, out_im_type){
     var ninefive_im = zero_im.where(f_im.gte(2.503), 1);
     var ninezero_im = zero_im.where(f_im.gte(2.030), 1);
     var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
-    var mlr_im = rmsr_im.addBands(rSquareAdj_im).addBands(coeff_im);
     function prediction_fn(imobj){
       var cli_im = ee.Image(imobj);
-      var c1 = mlr_im.select('c1');
-      var c2 = cli_im.select('ppt_sum').multiply(mlr_im.select('c2'));
-      var c3 = cli_im.select('tmax_mean').multiply(mlr_im.select('c3'));
-      var c4 = cli_im.select('tmin_mean').multiply(mlr_im.select('c4'));
-      var c5 = cli_im.select('tdmean_mean').multiply(mlr_im.select('c5'));
-      var c6 = cli_im.select('vpdmax_mean').multiply(mlr_im.select('c6'));
-      var c7 = cli_im.select('vpdmin_mean').multiply(mlr_im.select('c7'));
+      var c1 = coeff_im.select('c1');
+      var c2 = cli_im.select('ppt_sum').multiply(coeff_im.select('c2'));
+      var c3 = cli_im.select('tmax_mean').multiply(coeff_im.select('c3'));
+      var c4 = cli_im.select('tmin_mean').multiply(coeff_im.select('c4'));
+      var c5 = cli_im.select('tdmean_mean').multiply(coeff_im.select('c5'));
+      var c6 = cli_im.select('vpdmax_mean').multiply(coeff_im.select('c6'));
+      var c7 = cli_im.select('vpdmin_mean').multiply(coeff_im.select('c7'));
       var pred_im = c1.add(c2).add(c3).add(c4).add(c5).add(c6).add(c7);
+      var pred_im = pred_im.setDefaultProjection('EPSG:4326', transform_new);
+      var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
       return pred_im;
     }
   }else if (model_selection == model_list[1]){
@@ -222,13 +223,14 @@ function main_fn(band, rap_ic, out_im_type){
     var ninefive_im = zero_im.where(f_im.gte(2.503), 1);
     var ninezero_im = zero_im.where(f_im.gte(2.030), 1);
     var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
-    var mlr_im = rmsr_im.addBands(rSquareAdj_im).addBands(coeff_im); 
     function prediction_fn(imobj){
       var cli_im = ee.Image(imobj);
-      var c1 = mlr_im.select('c1');
-      var c2 = cli_im.select('ppt_sum').multiply(mlr_im.select('c2'));
-      var c3 = cli_im.select('tmean_mean').multiply(mlr_im.select('c3'));
+      var c1 = coeff_im.select('c1');
+      var c2 = cli_im.select('ppt_sum').multiply(coeff_im.select('c2'));
+      var c3 = cli_im.select('tmean_mean').multiply(coeff_im.select('c3'));
       var pred_im = c1.add(c2).add(c3);
+      var pred_im = pred_im.setDefaultProjection('EPSG:4326', transform_new);
+      var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
       return pred_im;
     }
   }else if (model_selection == model_list[2]){
@@ -250,12 +252,13 @@ function main_fn(band, rap_ic, out_im_type){
     var ninefive_im = zero_im.where(f_im.gte(2.503), 1);
     var ninezero_im = zero_im.where(f_im.gte(2.030), 1);
     var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
-    var mlr_im = rmsr_im.addBands(rSquareAdj_im).addBands(coeff_im);
     function prediction_fn(imobj){
       var cli_im = ee.Image(imobj);
-      var c1 = mlr_im.select('c1');
-      var c2 = cli_im.select('ppt_sum').multiply(mlr_im.select('c2'));
+      var c1 = coeff_im.select('c1');
+      var c2 = cli_im.select('ppt_sum').multiply(coeff_im.select('c2'));
       var pred_im = c1.add(c2);
+      var pred_im = pred_im.setDefaultProjection('EPSG:4326', transform_new);
+      var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
       return pred_im;
     }
   }
@@ -296,17 +299,23 @@ function main_fn(band, rap_ic, out_im_type){
     if (out_im_type.indexOf('trend') < 0){
       print('CLI COEFF');
       var coeff_str = out_im_type.slice(-2);
-      print(coeff_str);
       var coeff_idx = coeff_list.indexOf(coeff_str);
       var coeff_str = coeff_internal_list[coeff_idx];
-      return ee.Image(coeff_im.select(coeff_str));
+      print(coeff_str);
+      var term_im = ee.Image(coeff_im.select(coeff_str));
+      var term_im = term_im.setDefaultProjection('EPSG:4326', transform_new);
+      var term_im = term_im.reproject({crs:proj.crs(), crsTransform:transform_new});      
+      return term_im;
     }else{
       print('TREND COEFF');
       var coeff_str = out_im_type.slice(-6);
       var coeff_idx = coeff_list.indexOf(coeff_str);
       var coeff_str = coeff_internal_list[coeff_idx];
       print(coeff_str);
-      return ee.Image(coef_im.select(coeff_str));
+      var term_im = ee.Image(coef_im.select(coeff_str))
+      var term_im = term_im.setDefaultProjection('EPSG:4326', transform_new);
+      var term_im = term_im.reproject({crs:proj.crs(), crsTransform:transform_new});  
+      return term_im;
     }
   }else if (out_im_type == 'Tconf'){
     return con_im;
@@ -316,6 +325,8 @@ function main_fn(band, rap_ic, out_im_type){
     var year = ee.Number.parse(out_im_type.slice(7));
     var year_idx = years_list.indexOf(year);
     var pred_im = ee.Image(pred_ic_list.get(year_idx));
+    var pred_im = pred_im.setDefaultProjection('EPSG:4326', transform_new);
+    var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
     return pred_im;
   }else if (out_im_type.slice(0, 3) == 'cov' || out_im_type.slice(0, 3) == 'pro' || out_im_type.slice(0, 3) == 'agb'){
     var year = ee.Number.parse(out_im_type.slice(3));
@@ -329,17 +340,16 @@ function main_fn(band, rap_ic, out_im_type){
   }else if (out_im_type == 'Trend'){
     return rap_ic;
   }else if (out_im_type == 'Debug'){
-    return null;
+    print('DEBUG OUTPUT');
+    return merge_ic;
   }
 }
 
 
 //START DeBugGing TEsTING deBUggiNg tESTiNG TEsTiNG
-
+// var merge_ic = main_fn('PFG', cover_ic, 'Debug');
 // var merge_props = merge_ic.getRegion(geometry, scale);
-// var pred_props = pred_ic.getRegion(geometry, scale);
 // var merge_props = merge_props.slice(1);
-// var pred_props = pred_props.slice(1);
 
 // function make_prop_feats_fnA(p_list){
 //   var p_list = ee.List(p_list);
@@ -356,6 +366,15 @@ function main_fn(band, rap_ic, out_im_type){
 
 // var out_fc = ee.FeatureCollection(merge_props.map(make_prop_feats_fnA));
 
+// Export.table.toDrive({
+//   collection:out_fc,
+//   description:'merge_ic'
+// });
+
+// var pred_ic = main_fn('PFG', cover_ic, 'Debug');
+// var pred_props = pred_ic.getRegion(geometry, scale);
+// var pred_props = pred_props.slice(1);
+
 // function make_prop_feats_fnB(p_list){
 //   var p_list = ee.List(p_list);
 //   var a = p_list.get(4);
@@ -364,11 +383,6 @@ function main_fn(band, rap_ic, out_im_type){
 // }
 
 // var pred_fc = ee.FeatureCollection(pred_props.map(make_prop_feats_fnB));
-
-// Export.table.toDrive({
-//   collection:out_fc,
-//   description:'vectorsToDriveExample'
-// });
 
 // Export.table.toDrive({
 //   collection:pred_fc,
@@ -902,7 +916,7 @@ function renderYearB(year_selection){
 
 var year_dropdownB = ui.Select({
   items:years_str_list, 
-  placeholder:'Select PRED. Year', 
+  placeholder:'Select Predicted Year', 
   onChange:renderYearB,
   style:widgetStyle
 });
