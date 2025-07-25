@@ -305,7 +305,6 @@ function main_fn(band, rap_ic, out_im_type){
       var coeff_str = out_im_type.slice(-6);
       var coeff_idx = coeff_list.indexOf(coeff_str);
       var coeff_str = coeff_internal_list[coeff_idx];
-      //Map.addLayer(ee.Image(coef_im.select(coeff_str)));
       print(coeff_str);
       return ee.Image(coef_im.select(coeff_str));
     }
@@ -378,11 +377,13 @@ function main_fn(band, rap_ic, out_im_type){
 //END DeBugGing TEsTING dEbuGgINg tESTiNG TEsTiNG
 
 
+
 ///////////////////////
 ///////////////////////
 //USER INTERFACE
 ///////////////////////
 ///////////////////////
+
 
 //////////////////////
 //Styles
@@ -490,8 +491,8 @@ var textPanelStyle = {
 
 var covcoeff_map = {};
 
-covcoeff_map[coeff_list[0]] = {min:-0.5, max:0.5};
-covcoeff_map[coeff_list[1]] = {min:-0.1, max:0.1};
+covcoeff_map[coeff_list[0]] = {min:-0.3, max:0.3};
+covcoeff_map[coeff_list[1]] = {min:-0.01, max:0.01};
 covcoeff_map[coeff_list[2]] = {min:-10, max:10};
 covcoeff_map[coeff_list[3]] = {min:-20, max:20};
 covcoeff_map[coeff_list[4]] = {min:-10, max:10};
@@ -499,7 +500,7 @@ covcoeff_map[coeff_list[5]] = {min:-5, max:5};
 covcoeff_map[coeff_list[6]] = {min:-50, max:50};
 covcoeff_map[coeff_list[7]] = {min:-0.1, max:0.1};
 covcoeff_map[coeff_list[8]] = {min:-10, max:10};
-covcoeff_map[coeff_list[9]] = {min:-0.1, max:0.1};
+covcoeff_map[coeff_list[9]] = {min:-0.05, max:0.05};
 covcoeff_map[coeff_list[10]] = {min:-10, max:50};
 covcoeff_map[coeff_list[11]] = {min:-100, max:100};
 covcoeff_map[coeff_list[12]] = {min:-100, max:100};
@@ -508,15 +509,15 @@ covcoeff_map[coeff_list[13]] = {min:-100, max:100};
 var procoeff_map = {};
 
 procoeff_map[coeff_list[0]] = {min:-5, max:5};
-procoeff_map[coeff_list[1]] = {min:-1, max:1};
+procoeff_map[coeff_list[1]] = {min:-0.5, max:0.5};
 procoeff_map[coeff_list[2]] = {min:-100, max:100};
 procoeff_map[coeff_list[3]] = {min:-200, max:200};
 procoeff_map[coeff_list[4]] = {min:-100, max:100};
 procoeff_map[coeff_list[5]] = {min:-50, max:50};
 procoeff_map[coeff_list[6]] = {min:-500, max:500};
-procoeff_map[coeff_list[7]] = {min:-1, max:1};
+procoeff_map[coeff_list[7]] = {min:-0.5, max:0.5};
 procoeff_map[coeff_list[8]] = {min:-100, max:100};
-procoeff_map[coeff_list[9]] = {min:-1, max:1};
+procoeff_map[coeff_list[9]] = {min:-0.5, max:0.5};
 procoeff_map[coeff_list[10]] = {min:-100, max:500};
 procoeff_map[coeff_list[11]] = {min:-1000, max:1000};
 procoeff_map[coeff_list[12]] = {min:-1000, max:1000};
@@ -538,8 +539,6 @@ biocoeff_map[coeff_list[10]] = {min:-100, max:500};
 biocoeff_map[coeff_list[11]] = {min:-1000, max:1000};
 biocoeff_map[coeff_list[12]] = {min:-1000, max:1000};
 biocoeff_map[coeff_list[13]] = {min:-1000, max:1000};
-
-
 
 /////////////////////////////////////////
 //Global Widget Vars and Initial Display
@@ -671,7 +670,7 @@ function renderModel(model_string){
 
 var model_dropdown = ui.Select({
   items:model_list, 
-  placeholder:'Select Climate Regr. Model', 
+  placeholder:'Select Climate Regression Model', 
   onChange:renderModel,
   style:widgetStyle
 });
@@ -1072,6 +1071,14 @@ var info_str = 'OVERVIEW: \n' +
               'METHODOLOGY:  \n' +
               'Predictive statisticical models based on LR were used to predict RAP variables based on year-to-year \n' + 
               'datapoints from 1986-2014. First, a multiple linear regression (MLR) is used to predict annual RAP variables\n' + 
+              'from annually averaged PRISM variables. Six PRISM predictor variables were used: precipitation, \n' + 
+              'mean max/min temperature, mean dewpoint temperature, and mean max/min vapor pressure deficit. \n' + 
+              'asdYAYAYAflkasdfljk \n' + 
+              'OKokOKOKOKOKOKOKOK \n' + 
+              '\n' + 
+              'USAGE:  \n' +
+              'Choosing any selection option will render a new map. For options that are not chosen, placeholder options \n' + 
+              'are used until a selection is made. \n' + 
               'from annually averaged PRISM variables. Six PRISM predictor variables were used: precipitation, \n' + 
               'mean max/min temperature, mean dewpoint temperature, and mean max/min vapor pressure deficit. \n' + 
               'asdYAYAYAflkasdfljk \n' + 
