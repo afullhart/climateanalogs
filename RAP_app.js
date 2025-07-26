@@ -1,5 +1,4 @@
 //THINGS THAT DON'T WORK:
-//--//C1*pr + K3, PFG, B2
 //--LOOKING AT PREDICTED LAYERS WHEN BIG MODEL ISN''T SELECTED
 
 
@@ -172,12 +171,6 @@ function main_fn(band, rap_ic, out_im_type){
 
   function createConstantBand_fn(image){
     return ee.Image(1).addBands(image);
-  }
-  
-  if (out_im_type.slice(0, 5) == 'coeff'){
-    if (out_im_type.indexOf('trend') < 0){
-      var coeff_str = out_im_type.slice(-2);
-    }
   }
   
   //Climate model statistics
@@ -872,9 +865,14 @@ function renderCoeff(coeff_str){
   }else if (bio_bands.indexOf(band_selection) >= 0){
     var coeff_map = biocoeff_map;    
   }
+  for (var i = 0; i < model_list.length; i++){
+    if (model_list[i].indexOf(coeff_str) >= 0){
+      model_selection = model_list[i]
+    }
+  }
+  var palettes = require('users/gena/packages:palettes');
   var im_max = coeff_map[coeff_str]['max'];
   var im_min = coeff_map[coeff_str]['min'];
-  var palettes = require('users/gena/packages:palettes');
   bandVis = {min:im_min, max:im_max, palette:palettes.colorbrewer.BrBG[7]};
   var im_to_show = main_fn(band_selection, ic_selection, type_selection);
   Map.addLayer(im_to_show, bandVis);
