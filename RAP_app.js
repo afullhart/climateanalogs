@@ -1,3 +1,7 @@
+//THINGS THAT DON'T WORK:
+//--//C1*pr + K3, PFG, B2
+//--LOOKING AT PREDICTED LAYERS WHEN BIG MODEL ISN''T SELECTED
+
 
 var prism_ic = ee.ImageCollection('projects/sat-io/open-datasets/OREGONSTATE/PRISM_800_MONTHLY');
 var first_im = prism_ic.first().select('ppt');
@@ -170,6 +174,12 @@ function main_fn(band, rap_ic, out_im_type){
     return ee.Image(1).addBands(image);
   }
   
+  if (out_im_type.slice(0, 5) == 'coeff'){
+    if (out_im_type.indexOf('trend') < 0){
+      var coeff_str = out_im_type.slice(-2);
+    }
+  }
+  
   //Climate model statistics
   if (model_selection == model_list[0]){
     var regr_ic = merge_ic.map(createConstantBand_fn);
@@ -190,6 +200,8 @@ function main_fn(band, rap_ic, out_im_type){
     var ninefive_im = zero_im.where(f_im.gte(2.503), 1);
     var ninezero_im = zero_im.where(f_im.gte(2.030), 1);
     var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
+    var conf_im = conf_im.setDefaultProjection('EPSG:4326', transform_new);
+    var conf_im = conf_im.reproject({crs:proj.crs(), crsTransform:transform_new});
     function prediction_fn(imobj){
       var cli_im = ee.Image(imobj);
       var c1 = coeff_im.select('c1');
@@ -223,6 +235,8 @@ function main_fn(band, rap_ic, out_im_type){
     var ninefive_im = zero_im.where(f_im.gte(2.503), 1);
     var ninezero_im = zero_im.where(f_im.gte(2.030), 1);
     var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
+    var conf_im = conf_im.setDefaultProjection('EPSG:4326', transform_new);
+    var conf_im = conf_im.reproject({crs:proj.crs(), crsTransform:transform_new});
     function prediction_fn(imobj){
       var cli_im = ee.Image(imobj);
       var c1 = coeff_im.select('c1');
@@ -252,6 +266,8 @@ function main_fn(band, rap_ic, out_im_type){
     var ninefive_im = zero_im.where(f_im.gte(2.503), 1);
     var ninezero_im = zero_im.where(f_im.gte(2.030), 1);
     var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
+    var conf_im = conf_im.setDefaultProjection('EPSG:4326', transform_new);
+    var conf_im = conf_im.reproject({crs:proj.crs(), crsTransform:transform_new});
     function prediction_fn(imobj){
       var cli_im = ee.Image(imobj);
       var c1 = coeff_im.select('c1');
@@ -286,6 +302,8 @@ function main_fn(band, rap_ic, out_im_type){
   var ninefiv_im = zer_im.where(t_im.gte(2.024), 1);
   var ninezer_im = zer_im.where(t_im.gte(1.686), 1);
   var con_im = zer_im.add(ninenin_im).add(ninefiv_im).add(ninezer_im);
+  var con_im = con_im.setDefaultProjection('EPSG:4326', transform_new);
+  var con_im = con_im.reproject({crs:proj.crs(), crsTransform:transform_new});
 
   if (out_im_type == 'rmse'){
     return rmsr_im;
@@ -299,7 +317,9 @@ function main_fn(band, rap_ic, out_im_type){
     if (out_im_type.indexOf('trend') < 0){
       print('CLI COEFF');
       var coeff_str = out_im_type.slice(-2);
+      print(coeff_str);
       var coeff_idx = coeff_list.indexOf(coeff_str);
+      print(coeff_idx);
       var coeff_str = coeff_internal_list[coeff_idx];
       print(coeff_str);
       var term_im = ee.Image(coeff_im.select(coeff_str));
@@ -325,8 +345,6 @@ function main_fn(band, rap_ic, out_im_type){
     var year = ee.Number.parse(out_im_type.slice(7));
     var year_idx = years_list.indexOf(year);
     var pred_im = ee.Image(pred_ic_list.get(year_idx));
-    var pred_im = pred_im.setDefaultProjection('EPSG:4326', transform_new);
-    var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
     return pred_im;
   }else if (out_im_type.slice(0, 3) == 'cov' || out_im_type.slice(0, 3) == 'pro' || out_im_type.slice(0, 3) == 'agb'){
     var year = ee.Number.parse(out_im_type.slice(3));
@@ -341,6 +359,21 @@ function main_fn(band, rap_ic, out_im_type){
     return rap_ic;
   }else if (out_im_type == 'Debug'){
     print('DEBUG OUTPUT');
+    function prediction_fn(imobj){
+      var cli_im = ee.Image(imobj);
+      var c1 = coeff_im.select('c1');
+      var c2 = cli_im.select('ppt_sum').multiply(coeff_im.select('c2'));
+      var c3 = cli_im.select('tmax_mean').multiply(coeff_im.select('c3'));
+      var c4 = cli_im.select('tmin_mean').multiply(coeff_im.select('c4'));
+      var c5 = cli_im.select('tdmean_mean').multiply(coeff_im.select('c5'));
+      var c6 = cli_im.select('vpdmax_mean').multiply(coeff_im.select('c6'));
+      var c7 = cli_im.select('vpdmin_mean').multiply(coeff_im.select('c7'));
+      var pred_im = c1.add(c2).add(c3).add(c4).add(c5).add(c6).add(c7);
+      var pred_im = pred_im.setDefaultProjection('EPSG:4326', transform_new);
+      var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
+      return pred_im;
+    }
+    var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
     return merge_ic;
   }
 }
@@ -506,7 +539,7 @@ var textPanelStyle = {
 var covcoeff_map = {};
 
 covcoeff_map[coeff_list[0]] = {min:-0.3, max:0.3};
-covcoeff_map[coeff_list[1]] = {min:-0.01, max:0.01};
+covcoeff_map[coeff_list[1]] = {min:-0.02, max:0.02};
 covcoeff_map[coeff_list[2]] = {min:-10, max:10};
 covcoeff_map[coeff_list[3]] = {min:-20, max:20};
 covcoeff_map[coeff_list[4]] = {min:-10, max:10};
@@ -516,9 +549,9 @@ covcoeff_map[coeff_list[7]] = {min:-0.1, max:0.1};
 covcoeff_map[coeff_list[8]] = {min:-10, max:10};
 covcoeff_map[coeff_list[9]] = {min:-0.05, max:0.05};
 covcoeff_map[coeff_list[10]] = {min:-10, max:50};
-covcoeff_map[coeff_list[11]] = {min:-100, max:100};
-covcoeff_map[coeff_list[12]] = {min:-100, max:100};
-covcoeff_map[coeff_list[13]] = {min:-100, max:100};
+covcoeff_map[coeff_list[11]] = {min:-50, max:50};
+covcoeff_map[coeff_list[12]] = {min:-50, max:50};
+covcoeff_map[coeff_list[13]] = {min:-50, max:50};
 
 var procoeff_map = {};
 
