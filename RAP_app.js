@@ -352,21 +352,21 @@ function main_fn(band, rap_ic, out_im_type){
     return rap_ic;
   }else if (out_im_type == 'Debug'){
     print('DEBUG OUTPUT');
-    function prediction_fn(imobj){
-      var cli_im = ee.Image(imobj);
-      var c1 = coeff_im.select('c1');
-      var c2 = cli_im.select('ppt_sum').multiply(coeff_im.select('c2'));
-      var c3 = cli_im.select('tmax_mean').multiply(coeff_im.select('c3'));
-      var c4 = cli_im.select('tmin_mean').multiply(coeff_im.select('c4'));
-      var c5 = cli_im.select('tdmean_mean').multiply(coeff_im.select('c5'));
-      var c6 = cli_im.select('vpdmax_mean').multiply(coeff_im.select('c6'));
-      var c7 = cli_im.select('vpdmin_mean').multiply(coeff_im.select('c7'));
-      var pred_im = c1.add(c2).add(c3).add(c4).add(c5).add(c6).add(c7);
-      var pred_im = pred_im.setDefaultProjection('EPSG:4326', transform_new);
-      var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
-      return pred_im;
-    }
-    var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
+    // function prediction_fn(imobj){
+    //   var cli_im = ee.Image(imobj);
+    //   var c1 = coeff_im.select('c1');
+    //   var c2 = cli_im.select('ppt_sum').multiply(coeff_im.select('c2'));
+    //   var c3 = cli_im.select('tmax_mean').multiply(coeff_im.select('c3'));
+    //   var c4 = cli_im.select('tmin_mean').multiply(coeff_im.select('c4'));
+    //   var c5 = cli_im.select('tdmean_mean').multiply(coeff_im.select('c5'));
+    //   var c6 = cli_im.select('vpdmax_mean').multiply(coeff_im.select('c6'));
+    //   var c7 = cli_im.select('vpdmin_mean').multiply(coeff_im.select('c7'));
+    //   var pred_im = c1.add(c2).add(c3).add(c4).add(c5).add(c6).add(c7);
+    //   var pred_im = pred_im.setDefaultProjection('EPSG:4326', transform_new);
+    //   var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
+    //   return pred_im;
+    // }
+    // var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
     return merge_ic;
   }
 }
