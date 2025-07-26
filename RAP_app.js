@@ -1,6 +1,3 @@
-//THINGS THAT DON'T WORK:
-//--LOOKING AT PREDICTED LAYERS WHEN BIG MODEL ISN''T SELECTED
-
 
 var prism_ic = ee.ImageCollection('projects/sat-io/open-datasets/OREGONSTATE/PRISM_800_MONTHLY');
 var first_im = prism_ic.first().select('ppt');
@@ -308,23 +305,17 @@ function main_fn(band, rap_ic, out_im_type){
     return conf_im;
   }else if (out_im_type.slice(0, 5) == 'coeff'){
     if (out_im_type.indexOf('trend') < 0){
-      print('CLI COEFF');
       var coeff_str = out_im_type.slice(-2);
-      print(coeff_str);
       var coeff_idx = coeff_list.indexOf(coeff_str);
-      print(coeff_idx);
       var coeff_str = coeff_internal_list[coeff_idx];
-      print(coeff_str);
       var term_im = ee.Image(coeff_im.select(coeff_str));
       var term_im = term_im.setDefaultProjection('EPSG:4326', transform_new);
       var term_im = term_im.reproject({crs:proj.crs(), crsTransform:transform_new});      
       return term_im;
     }else{
-      print('TREND COEFF');
       var coeff_str = out_im_type.slice(-6);
       var coeff_idx = coeff_list.indexOf(coeff_str);
       var coeff_str = coeff_internal_list[coeff_idx];
-      print(coeff_str);
       var term_im = ee.Image(coef_im.select(coeff_str))
       var term_im = term_im.setDefaultProjection('EPSG:4326', transform_new);
       var term_im = term_im.reproject({crs:proj.crs(), crsTransform:transform_new});  
@@ -857,7 +848,6 @@ main_panel.add(metric_dropdown);
 function renderCoeff(coeff_str){
   Map.layers().reset();
   type_selection = 'coeff'.concat(coeff_str);
-  print(coeff_str);
   if (cover_bands.indexOf(band_selection) >= 0){
     var coeff_map = covcoeff_map;
   }else if (prod_bands.indexOf(band_selection) >= 0){
