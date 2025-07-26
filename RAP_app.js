@@ -627,7 +627,7 @@ function makeLegend(){
   });
 
   var panel = ui.Panel({
-    widgets:[ui.Label(String(bandVis['max']).concat('+'))]
+    widgets:[ui.Label('>= '.concat(String(bandVis['max'])))]
   });
   
   var lat = ee.Image.pixelLonLat().select('latitude');
@@ -639,10 +639,16 @@ function makeLegend(){
     params:{bbox:'0,0,10,100', dimensions:'10x200'}, 
     style:{position:'bottom-center', stretch:'vertical', margin:'0px 8px', maxHeight:'200px'}
   });
-
-  var panel2 = ui.Panel({
-    widgets:[ui.Label(bandVis['min'])]
-  });
+  
+  if (['cov', 'pro', 'agb', 'rms'].indexOf(type_selection.slice(0, 3)) < 0){
+    var panel2 = ui.Panel({
+      widgets:[ui.Label('<= '.concat(String(bandVis['min'])))]
+    });
+  }else{
+    var panel2 = ui.Panel({
+      widgets:[ui.Label(String(bandVis['min']))]
+    });
+  }
 
   if (type_selection == 'Fconf' || type_selection == 'Tconf'){
 
