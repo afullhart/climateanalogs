@@ -22,8 +22,8 @@ var prod_ic = ee.ImageCollection('projects/rap-data-365417/assets/npp-partitione
 var mat_ic = ee.ImageCollection('projects/rap-data-365417/assets/gridmet-MAT');
 var metric_strs = ['rmse', 'rsqr', 'rsqrA', 'Fconf', 'Tconf'];
 var model_list = ['A1*pr + A2*tx + A3*tn + A4*td + A5*vx + A6*vn + K1', 'B1*pr + B2*tm + K2', 'C1*pr + K3'];
-var coeff_list = ['Atrend', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'B1', 'B2', 'C1', 'Ktrend', 'K1', 'K2', 'K3'];
-var coeff_internal_list = ['c2', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c2', 'c3', 'c2', 'c1', 'c1', 'c1', 'c1'];
+var coeff_list = ['Atrend', 'Ktrend', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'B1', 'B2', 'C1', 'K1', 'K2', 'K3'];
+var coeff_internal_list = ['c2', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c2', 'c3', 'c2', 'c1', 'c1', 'c1'];
 
 ////////////////////////////
 //Global main function args
