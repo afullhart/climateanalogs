@@ -172,18 +172,19 @@ function main_fn(band, rap_ic, out_im_type){
     return ee.Image(1).addBands(image);
   }
   
+  var regr_ic = merge_ic.map(createConstantBand_fn);
+  
   //Climate model statistics
   if (model_selection == model_list[0]){
-    var regr_ic = merge_ic.map(createConstantBand_fn);
     var regr_ic = regr_ic.select(['constant', 'ppt_sum', 'tmax_mean', 'tmin_mean', 'tdmean_mean', 'vpdmax_mean', 'vpdmin_mean', band]);
-    var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:7, numY:1}));
-    var rmsr_im = regr_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
+    var result_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:7, numY:1}));
+    var rmsr_im = result_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
     var rss_im = rmsr_im.pow(2).multiply(n);
     var sSquare_im = rss_im.divide(dof);
-    var yVariance_im = merge_ic.select(band).reduce(ee.Reducer.sampleVariance());
+    var yVariance_im = regr_ic.select(band).reduce(ee.Reducer.sampleVariance());
     var rSquare_im = ee.Image(1).subtract(ee.Image(rss_im.divide(yVariance_im.multiply(n.subtract(1)))));
     var rSquareAdj_im = ee.Image(1).subtract(sSquare_im.divide(yVariance_im));
-    var coeff_im = regr_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7']]);
+    var coeff_im = result_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7']]);
     var coeff_im = coeff_im.setDefaultProjection('EPSG:4326', transform_new);
     var coeff_im = coeff_im.reproject({crs:proj.crs(), crsTransform:transform_new});
     var top_im = rSquare_im.divide(k);
@@ -197,30 +198,29 @@ function main_fn(band, rap_ic, out_im_type){
     var conf_im = conf_im.setDefaultProjection('EPSG:4326', transform_new);
     var conf_im = conf_im.reproject({crs:proj.crs(), crsTransform:transform_new});
     function prediction_fn(imobj){
-      var cli_im = ee.Image(imobj);
+      var regr_im = ee.Image(imobj);
       var c1 = coeff_im.select('c1');
-      var c2 = cli_im.select('ppt_sum').multiply(coeff_im.select('c2'));
-      var c3 = cli_im.select('tmax_mean').multiply(coeff_im.select('c3'));
-      var c4 = cli_im.select('tmin_mean').multiply(coeff_im.select('c4'));
-      var c5 = cli_im.select('tdmean_mean').multiply(coeff_im.select('c5'));
-      var c6 = cli_im.select('vpdmax_mean').multiply(coeff_im.select('c6'));
-      var c7 = cli_im.select('vpdmin_mean').multiply(coeff_im.select('c7'));
+      var c2 = regr_im.select('ppt_sum').multiply(coeff_im.select('c2'));
+      var c3 = regr_im.select('tmax_mean').multiply(coeff_im.select('c3'));
+      var c4 = regr_im.select('tmin_mean').multiply(coeff_im.select('c4'));
+      var c5 = regr_im.select('tdmean_mean').multiply(coeff_im.select('c5'));
+      var c6 = regr_im.select('vpdmax_mean').multiply(coeff_im.select('c6'));
+      var c7 = regr_im.select('vpdmin_mean').multiply(coeff_im.select('c7'));
       var pred_im = c1.add(c2).add(c3).add(c4).add(c5).add(c6).add(c7);
       var pred_im = pred_im.setDefaultProjection('EPSG:4326', transform_new);
       var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
       return pred_im;
     }
   }else if (model_selection == model_list[1]){
-    var regr_ic = merge_ic.map(createConstantBand_fn);
     var regr_ic = regr_ic.select(['constant', 'ppt_sum', 'tmean_mean', band]);
-    var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:3, numY:1}));
-    var rmsr_im = regr_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
+    var result_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:3, numY:1}));
+    var rmsr_im = result_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
     var rss_im = rmsr_im.pow(2).multiply(n);
     var sSquare_im = rss_im.divide(dof);
-    var yVariance_im = merge_ic.select(band).reduce(ee.Reducer.sampleVariance());
+    var yVariance_im = regr_ic.select(band).reduce(ee.Reducer.sampleVariance());
     var rSquare_im = ee.Image(1).subtract(ee.Image(rss_im.divide(yVariance_im.multiply(n.subtract(1)))));
     var rSquareAdj_im = ee.Image(1).subtract(sSquare_im.divide(yVariance_im));
-    var coeff_im = regr_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2', 'c3']]);
+    var coeff_im = result_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2', 'c3']]);
     var coeff_im = coeff_im.setDefaultProjection('EPSG:4326', transform_new);
     var coeff_im = coeff_im.reproject({crs:proj.crs(), crsTransform:transform_new});
     var top_im = rSquare_im.divide(k);
@@ -234,26 +234,25 @@ function main_fn(band, rap_ic, out_im_type){
     var conf_im = conf_im.setDefaultProjection('EPSG:4326', transform_new);
     var conf_im = conf_im.reproject({crs:proj.crs(), crsTransform:transform_new});
     function prediction_fn(imobj){
-      var cli_im = ee.Image(imobj);
+      var regr_im = ee.Image(imobj);
       var c1 = coeff_im.select('c1');
-      var c2 = cli_im.select('ppt_sum').multiply(coeff_im.select('c2'));
-      var c3 = cli_im.select('tmean_mean').multiply(coeff_im.select('c3'));
+      var c2 = regr_im.select('ppt_sum').multiply(coeff_im.select('c2'));
+      var c3 = regr_im.select('tmean_mean').multiply(coeff_im.select('c3'));
       var pred_im = c1.add(c2).add(c3);
       var pred_im = pred_im.setDefaultProjection('EPSG:4326', transform_new);
       var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
       return pred_im;
     }
   }else if (model_selection == model_list[2]){
-    var regr_ic = merge_ic.map(createConstantBand_fn);
     var regr_ic = regr_ic.select(['constant', 'ppt_sum', band]);
-    var regr_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:2, numY:1}));
-    var rmsr_im = regr_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
+    var result_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:2, numY:1}));
+    var rmsr_im = result_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
     var rss_im = rmsr_im.pow(2).multiply(n);
     var sSquare_im = rss_im.divide(dof);
-    var yVariance_im = merge_ic.select(band).reduce(ee.Reducer.sampleVariance());
+    var yVariance_im = regr_ic.select(band).reduce(ee.Reducer.sampleVariance());
     var rSquare_im = ee.Image(1).subtract(ee.Image(rss_im.divide(yVariance_im.multiply(n.subtract(1)))));
     var rSquareAdj_im = ee.Image(1).subtract(sSquare_im.divide(yVariance_im));
-    var coeff_im = regr_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2']]);
+    var coeff_im = result_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2']]);
     var coeff_im = coeff_im.setDefaultProjection('EPSG:4326', transform_new);
     var coeff_im = coeff_im.reproject({crs:proj.crs(), crsTransform:transform_new});
     var top_im = rSquare_im.divide(k);
@@ -267,9 +266,9 @@ function main_fn(band, rap_ic, out_im_type){
     var conf_im = conf_im.setDefaultProjection('EPSG:4326', transform_new);
     var conf_im = conf_im.reproject({crs:proj.crs(), crsTransform:transform_new});
     function prediction_fn(imobj){
-      var cli_im = ee.Image(imobj);
+      var regr_im = ee.Image(imobj);
       var c1 = coeff_im.select('c1');
-      var c2 = cli_im.select('ppt_sum').multiply(coeff_im.select('c2'));
+      var c2 = regr_im.select('ppt_sum').multiply(coeff_im.select('c2'));
       var pred_im = c1.add(c2);
       var pred_im = pred_im.setDefaultProjection('EPSG:4326', transform_new);
       var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
@@ -288,12 +287,12 @@ function main_fn(band, rap_ic, out_im_type){
   var merg_ic = ee.ImageCollection(ee.List(yr_idx_list.map(merg_bands_fn)));
   var reg_ic = merg_ic.map(createConstantBand_fn);
   var reg_ic = reg_ic.select(['constant', 'constant_1', band]);
-  var reg_im = reg_ic.reduce(ee.Reducer.linearRegression({numX:2, numY:1}));
-  var rmse_im = reg_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
+  var res_im = reg_ic.reduce(ee.Reducer.linearRegression({numX:2, numY:1}));
+  var rmse_im = res_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
   var top_im = ee.Image(rmse_im.pow(2).multiply(n).divide(n.subtract(2))).pow(0.5);
   var bot_im = reg_ic.select('constant_1').reduce(ee.Reducer.sampleVariance()).multiply(n.subtract(1)).pow(0.5);
   var sslp_im = top_im.divide(bot_im);
-  var coef_im = reg_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2']]);
+  var coef_im = res_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2']]);
   var coef_im = coef_im.setDefaultProjection('EPSG:4326', transform_new);
   var coef_im = coef_im.reproject({crs:proj.crs(), crsTransform:transform_new});
   var t_im = coef_im.select('c2').divide(sslp_im);
@@ -334,7 +333,7 @@ function main_fn(band, rap_ic, out_im_type){
   }else if (out_im_type == 'Tconf'){
     return con_im;
   }else if (out_im_type.slice(0, 7) == 'covpred' || out_im_type.slice(0, 7) == 'propred'|| out_im_type.slice(0, 7) == 'agbpred'){
-    var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
+    var prediction_ic = ee.ImageCollection(regr_ic.map(prediction_fn));
     var pred_ic_list = prediction_ic.toList(999);
     var year = ee.Number.parse(out_im_type.slice(7));
     var year_idx = years_list.indexOf(year);
@@ -346,7 +345,7 @@ function main_fn(band, rap_ic, out_im_type){
     var rap_im = ee.Image(rap_ic_list.get(year_idx));
     return rap_im;
   }else if (out_im_type == 'OnetoOne'){
-    var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
+    var prediction_ic = ee.ImageCollection(regr_ic.map(prediction_fn));
     var oneone_ic = rap_ic.merge(prediction_ic);
     return oneone_ic;
   }else if (out_im_type == 'Trend'){
