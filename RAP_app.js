@@ -1,3 +1,5 @@
+//THINGS THAT DON'T WORK
+//wrong units for rsqr, rsqrA
 
 var prism_ic = ee.ImageCollection('projects/sat-io/open-datasets/OREGONSTATE/PRISM_800_MONTHLY');
 var first_im = prism_ic.first().select('ppt');
@@ -182,6 +184,8 @@ function main_fn(band, rap_ic, out_im_type){
     var rSquare_im = ee.Image(1).subtract(ee.Image(rss_im.divide(yVariance_im.multiply(n.subtract(1)))));
     var rSquareAdj_im = ee.Image(1).subtract(sSquare_im.divide(yVariance_im));
     var coeff_im = regr_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7']]);
+    var coeff_im = coeff_im.setDefaultProjection('EPSG:4326', transform_new);
+    var coeff_im = coeff_im.reproject({crs:proj.crs(), crsTransform:transform_new});
     var top_im = rSquare_im.divide(k);
     var bot_im = ee.Image(ee.Image(1).subtract(rSquare_im)).divide(n.subtract(k).subtract(1));
     var f_im = top_im.divide(bot_im);
@@ -217,6 +221,8 @@ function main_fn(band, rap_ic, out_im_type){
     var rSquare_im = ee.Image(1).subtract(ee.Image(rss_im.divide(yVariance_im.multiply(n.subtract(1)))));
     var rSquareAdj_im = ee.Image(1).subtract(sSquare_im.divide(yVariance_im));
     var coeff_im = regr_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2', 'c3']]);
+    var coeff_im = coeff_im.setDefaultProjection('EPSG:4326', transform_new);
+    var coeff_im = coeff_im.reproject({crs:proj.crs(), crsTransform:transform_new});
     var top_im = rSquare_im.divide(k);
     var bot_im = ee.Image(ee.Image(1).subtract(rSquare_im)).divide(n.subtract(k).subtract(1));
     var f_im = top_im.divide(bot_im);
@@ -248,6 +254,8 @@ function main_fn(band, rap_ic, out_im_type){
     var rSquare_im = ee.Image(1).subtract(ee.Image(rss_im.divide(yVariance_im.multiply(n.subtract(1)))));
     var rSquareAdj_im = ee.Image(1).subtract(sSquare_im.divide(yVariance_im));
     var coeff_im = regr_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2']]);
+    var coeff_im = coeff_im.setDefaultProjection('EPSG:4326', transform_new);
+    var coeff_im = coeff_im.reproject({crs:proj.crs(), crsTransform:transform_new});
     var top_im = rSquare_im.divide(k);
     var bot_im = ee.Image(ee.Image(1).subtract(rSquare_im)).divide(n.subtract(k).subtract(1));
     var f_im = top_im.divide(bot_im);
@@ -286,6 +294,8 @@ function main_fn(band, rap_ic, out_im_type){
   var bot_im = reg_ic.select('constant_1').reduce(ee.Reducer.sampleVariance()).multiply(n.subtract(1)).pow(0.5);
   var sslp_im = top_im.divide(bot_im);
   var coef_im = reg_im.select('coefficients').arrayProject([0]).arrayFlatten([['c1', 'c2']]);
+  var coef_im = coef_im.setDefaultProjection('EPSG:4326', transform_new);
+  var coef_im = coef_im.reproject({crs:proj.crs(), crsTransform:transform_new});
   var t_im = coef_im.select('c2').divide(sslp_im);
   var zer_im = rmse_im.lt(0.0);
   var ninenin_im = zer_im.where(t_im.gte(2.712), 1);
@@ -1165,5 +1175,3 @@ var info_checkbox = ui.Checkbox({
 main_panel.add(info_checkbox);
 
 ui.root.add(main_panel);
-
-
