@@ -369,13 +369,15 @@ function main_fn(band, rap_ic, out_im_type){
     //   return pred_im;
     // }
     // var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
-    return merge_ic;
+    return f_im;
   }
 }
 
 
 //START DeBugGing TEsTING deBUggiNg tESTiNG TEsTiNG
-// var merge_ic = main_fn('PFG', cover_ic, 'Debug');
+// var thing = main_fn('PFG', cover_ic, 'Debug');
+// Map.addLayer(thing, {min:0, max:3})
+
 // var merge_props = merge_ic.getRegion(geometry, scale);
 // var merge_props = merge_props.slice(1);
 
