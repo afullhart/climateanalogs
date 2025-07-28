@@ -199,7 +199,7 @@ function main_fn(band, rap_ic, out_im_type){
     var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
     var conf_im = conf_im.setDefaultProjection('EPSG:4326', transform_new);
     var conf_im = conf_im.reproject({crs:proj.crs(), crsTransform:transform_new});
-    function prediction_fn(imobj){
+    function predictionA_fn(imobj){
       var regr_im = ee.Image(imobj);
       var c1 = coeff_im.select('c1');
       var c2 = regr_im.select('ppt_sum').multiply(coeff_im.select('c2'));
@@ -213,7 +213,7 @@ function main_fn(band, rap_ic, out_im_type){
       var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
       return pred_im;
     }
-    var prediction_ic = ee.ImageCollection(regr_ic.map(prediction_fn));
+    var predictionA_ic = ee.ImageCollection(regr_ic.map(predictionA_fn));
   }else if (model_selection == model_list[1]){
     var regr_ic = regr_ic.select(['constant', 'ppt_sum', 'tmean_mean', band]);
     var result_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:3, numY:1}));
@@ -236,7 +236,7 @@ function main_fn(band, rap_ic, out_im_type){
     var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
     var conf_im = conf_im.setDefaultProjection('EPSG:4326', transform_new);
     var conf_im = conf_im.reproject({crs:proj.crs(), crsTransform:transform_new});
-    function prediction_fn(imobj){
+    function predictionB_fn(imobj){
       var regr_im = ee.Image(imobj);
       var c1 = coeff_im.select('c1');
       var c2 = regr_im.select('ppt_sum').multiply(coeff_im.select('c2'));
@@ -246,7 +246,7 @@ function main_fn(band, rap_ic, out_im_type){
       var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
       return pred_im;
     }
-    var prediction_ic = ee.ImageCollection(regr_ic.map(prediction_fn));
+    var predictionB_ic = ee.ImageCollection(regr_ic.map(predictionB_fn));
   }else if (model_selection == model_list[2]){
     var regr_ic = regr_ic.select(['constant', 'ppt_sum', band]);
     var result_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:2, numY:1}));
@@ -269,7 +269,7 @@ function main_fn(band, rap_ic, out_im_type){
     var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
     var conf_im = conf_im.setDefaultProjection('EPSG:4326', transform_new);
     var conf_im = conf_im.reproject({crs:proj.crs(), crsTransform:transform_new});
-    function prediction_fn(imobj){
+    function predictionC_fn(imobj){
       var regr_im = ee.Image(imobj);
       var c1 = coeff_im.select('c1');
       var c2 = regr_im.select('ppt_sum').multiply(coeff_im.select('c2'));
@@ -278,7 +278,7 @@ function main_fn(band, rap_ic, out_im_type){
       var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
       return pred_im;
     }
-    var prediction_ic = ee.ImageCollection(regr_ic.map(prediction_fn));
+    var predictionC_ic = ee.ImageCollection(regr_ic.map(predictionC_fn));
   }
   
   //Trend model statistics
@@ -338,6 +338,13 @@ function main_fn(band, rap_ic, out_im_type){
       return term_im;
     }
   }else if (out_im_type.slice(0, 7) == 'covpred' || out_im_type.slice(0, 7) == 'propred'|| out_im_type.slice(0, 7) == 'agbpred'){
+    if (model_selection == model_list[0]){
+      var prediction_ic = predictionA_ic;
+    }else if (model_selection == model_list[1]){
+      var prediction_ic = predictionB_ic;
+    }else if (model_selection == model_list[2]){
+      var prediction_ic = predictionC_ic;
+    }
     var pred_ic_list = prediction_ic.toList(999);
     var year = ee.Number.parse(out_im_type.slice(7));
     var year_idx = years_list.indexOf(year);
@@ -376,8 +383,8 @@ function main_fn(band, rap_ic, out_im_type){
 }
 
 //START DeBugGing TEsTING deBUggiNg tESTiNG TEsTiNG
-var thing = main_fn('PFG', cover_ic, 'Debug');
-Map.addLayer(thing, {min:0, max:3})
+//var thing = main_fn('PFG', cover_ic, 'Debug');
+//Map.addLayer(thing, {min:0, max:3})
 
 // var merge_props = merge_ic.getRegion(geometry, scale);
 // var merge_props = merge_props.slice(1);
