@@ -117,11 +117,13 @@ function yr_fn(yrobj){
   var tmin_im = tmin_ic.reduce(ee.Reducer.mean()).clip(area_shp);
   var tdew_ic = prism_ic.filterDate(start, end).select('tdmean');
   var tdew_im = tdew_ic.reduce(ee.Reducer.mean()).clip(area_shp);
-  var vmin_ic = prism_ic.filterDate(start, end).select('vpdmax');
-  var vmin_im = vmin_ic.reduce(ee.Reducer.mean()).clip(area_shp);
-  var vmax_ic = prism_ic.filterDate(start, end).select('vpdmin');
+  var vmax_ic = prism_ic.filterDate(start, end).select('vpdmax');
   var vmax_im = vmax_ic.reduce(ee.Reducer.mean()).clip(area_shp);
-  var year_im = precip_im.addBands(tmean_im).addBands(tmax_im).addBands(tmin_im).addBands(tdew_im).addBands(vmin_im).addBands(vmax_im);
+  var vmin_ic = prism_ic.filterDate(start, end).select('vpdmin');
+  var vmin_im = vmin_ic.reduce(ee.Reducer.mean()).clip(area_shp);
+  var year_im = precip_im.addBands(tmean_im).addBands(tmax_im).addBands(tmin_im).addBands(tdew_im).addBands(vmax_im).addBands(vmin_im);
+  var year_im = year_im.setDefaultProjection('EPSG:4326', transform_new);
+  var year_im = year_im.reproject({crs:proj.crs(), crsTransform:transform_new});
   return year_im;
 }
 
@@ -312,6 +314,8 @@ function main_fn(band, rap_ic, out_im_type){
     return rSquareAdj_im;
   }else if (out_im_type == 'Fconf'){
     return conf_im;
+  }else if (out_im_type == 'Tconf'){
+    return con_im;    
   }else if (out_im_type.slice(0, 5) == 'coeff'){
     if (out_im_type.indexOf('trend') < 0){
       var coeff_str = out_im_type.slice(-2);
@@ -330,8 +334,6 @@ function main_fn(band, rap_ic, out_im_type){
       var term_im = term_im.reproject({crs:proj.crs(), crsTransform:transform_new});  
       return term_im;
     }
-  }else if (out_im_type == 'Tconf'){
-    return con_im;
   }else if (out_im_type.slice(0, 7) == 'covpred' || out_im_type.slice(0, 7) == 'propred'|| out_im_type.slice(0, 7) == 'agbpred'){
     var prediction_ic = ee.ImageCollection(regr_ic.map(prediction_fn));
     var pred_ic_list = prediction_ic.toList(999);
@@ -532,16 +534,16 @@ var textPanelStyle = {
 var covcoeff_map = {};
 
 covcoeff_map[coeff_list[0]] = {min:-0.3, max:0.3};
-covcoeff_map[coeff_list[1]] = {min:-0.02, max:0.02};
-covcoeff_map[coeff_list[2]] = {min:-10, max:10};
-covcoeff_map[coeff_list[3]] = {min:-20, max:20};
-covcoeff_map[coeff_list[4]] = {min:-10, max:10};
-covcoeff_map[coeff_list[5]] = {min:-5, max:5};
-covcoeff_map[coeff_list[6]] = {min:-50, max:50};
-covcoeff_map[coeff_list[7]] = {min:-0.1, max:0.1};
-covcoeff_map[coeff_list[8]] = {min:-10, max:10};
-covcoeff_map[coeff_list[9]] = {min:-0.05, max:0.05};
-covcoeff_map[coeff_list[10]] = {min:-10, max:50};
+covcoeff_map[coeff_list[1]] = {min:-10, max:50};
+covcoeff_map[coeff_list[2]] = {min:-0.02, max:0.02};
+covcoeff_map[coeff_list[3]] = {min:-10, max:10};
+covcoeff_map[coeff_list[4]] = {min:-20, max:20};
+covcoeff_map[coeff_list[5]] = {min:-10, max:10};
+covcoeff_map[coeff_list[6]] = {min:-5, max:5};
+covcoeff_map[coeff_list[7]] = {min:-50, max:50};
+covcoeff_map[coeff_list[8]] = {min:-0.1, max:0.1};
+covcoeff_map[coeff_list[9]] = {min:-10, max:10};
+covcoeff_map[coeff_list[10]] = {min:-0.05, max:0.05};
 covcoeff_map[coeff_list[11]] = {min:-50, max:50};
 covcoeff_map[coeff_list[12]] = {min:-50, max:50};
 covcoeff_map[coeff_list[13]] = {min:-50, max:50};
@@ -549,16 +551,16 @@ covcoeff_map[coeff_list[13]] = {min:-50, max:50};
 var procoeff_map = {};
 
 procoeff_map[coeff_list[0]] = {min:-5, max:5};
-procoeff_map[coeff_list[1]] = {min:-0.5, max:0.5};
-procoeff_map[coeff_list[2]] = {min:-100, max:100};
-procoeff_map[coeff_list[3]] = {min:-200, max:200};
-procoeff_map[coeff_list[4]] = {min:-100, max:100};
-procoeff_map[coeff_list[5]] = {min:-50, max:50};
-procoeff_map[coeff_list[6]] = {min:-500, max:500};
-procoeff_map[coeff_list[7]] = {min:-0.5, max:0.5};
-procoeff_map[coeff_list[8]] = {min:-100, max:100};
-procoeff_map[coeff_list[9]] = {min:-0.5, max:0.5};
-procoeff_map[coeff_list[10]] = {min:-100, max:500};
+procoeff_map[coeff_list[1]] = {min:-100, max:500};
+procoeff_map[coeff_list[2]] = {min:-0.5, max:0.5};
+procoeff_map[coeff_list[3]] = {min:-100, max:100};
+procoeff_map[coeff_list[4]] = {min:-200, max:200};
+procoeff_map[coeff_list[5]] = {min:-100, max:100};
+procoeff_map[coeff_list[6]] = {min:-50, max:50};
+procoeff_map[coeff_list[7]] = {min:-500, max:500};
+procoeff_map[coeff_list[8]] = {min:-0.5, max:0.5};
+procoeff_map[coeff_list[9]] = {min:-100, max:100};
+procoeff_map[coeff_list[10]] = {min:-0.5, max:0.5};
 procoeff_map[coeff_list[11]] = {min:-1000, max:1000};
 procoeff_map[coeff_list[12]] = {min:-1000, max:1000};
 procoeff_map[coeff_list[13]] = {min:-1000, max:1000};
@@ -566,16 +568,16 @@ procoeff_map[coeff_list[13]] = {min:-1000, max:1000};
 var biocoeff_map = {};
 
 biocoeff_map[coeff_list[0]] = {min:-5, max:5};
-biocoeff_map[coeff_list[1]] = {min:-1, max:1};
-biocoeff_map[coeff_list[2]] = {min:-100, max:100};
-biocoeff_map[coeff_list[3]] = {min:-200, max:200};
-biocoeff_map[coeff_list[4]] = {min:-100, max:100};
-biocoeff_map[coeff_list[5]] = {min:-50, max:50};
-biocoeff_map[coeff_list[6]] = {min:-500, max:500};
-biocoeff_map[coeff_list[7]] = {min:-1, max:1};
-biocoeff_map[coeff_list[8]] = {min:-100, max:100};
-biocoeff_map[coeff_list[9]] = {min:-1, max:1};
-biocoeff_map[coeff_list[10]] = {min:-100, max:500};
+biocoeff_map[coeff_list[1]] = {min:-100, max:500};
+biocoeff_map[coeff_list[2]] = {min:-1, max:1};
+biocoeff_map[coeff_list[3]] = {min:-100, max:100};
+biocoeff_map[coeff_list[4]] = {min:-200, max:200};
+biocoeff_map[coeff_list[5]] = {min:-100, max:100};
+biocoeff_map[coeff_list[6]] = {min:-50, max:50};
+biocoeff_map[coeff_list[7]] = {min:-500, max:500};
+biocoeff_map[coeff_list[8]] = {min:-1, max:1};
+biocoeff_map[coeff_list[9]] = {min:-100, max:100};
+biocoeff_map[coeff_list[10]] = {min:-1, max:1};
 biocoeff_map[coeff_list[11]] = {min:-1000, max:1000};
 biocoeff_map[coeff_list[12]] = {min:-1000, max:1000};
 biocoeff_map[coeff_list[13]] = {min:-1000, max:1000};
@@ -764,7 +766,19 @@ function renderVariable(var_selection){
     }
   }
   var im_to_show = main_fn(band_selection, ic_selection, type_selection);
-  if (type_selection == 'rmse' && cover_bands.indexOf(band_selection) >= 0){
+  if (type_selection.slice(0, 3) == 'cov'){
+    bandVis = covVis;
+  }else if (type_selection.slice(0, 3) == 'pro'){
+    bandVis = proVis;
+  }else if (type_selection.slice(0, 3) == 'agb'){
+    bandVis = bioVis;
+  }else if (type_selection.slice(0, 7) == 'covpred'){
+    bandVis = covVis;
+  }else if (type_selection.slice(0, 7) == 'propred'){
+    bandVis = proVis;
+  }else if (type_selection.slice(0, 7) == 'agbpred'){
+    bandVis = agbVis;
+  }else if (type_selection == 'rmse' && cover_bands.indexOf(band_selection) >= 0){
     bandVis = rmseCovVis;
   }else if (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0){
     bandVis = rmseProVis;
@@ -775,6 +789,8 @@ function renderVariable(var_selection){
   }else if (type_selection == 'rsqrA'){
     bandVis = rsqrAdjVis;
   }else if (type_selection == 'Fconf'){
+    bandVis = confVis;
+  }else if (type_selection == 'Tconf'){
     bandVis = confVis;
   }else if (type_selection.indexOf('coeff') >= 0 && cover_bands.indexOf(band_selection) >= 0){
     var coeff_str = type_selection.slice(5);
@@ -794,20 +810,6 @@ function renderVariable(var_selection){
     var im_min = biocoeff_map[coeff_str]['min'];
     var palettes = require('users/gena/packages:palettes');
     bandVis = {min:im_min, max:im_max, palette:palettes.colorbrewer.BrBG[7]};
-  }else if (type_selection == 'Tconf'){
-    bandVis = confVis;
-  }else if (type_selection.slice(0, 3) == 'cov'){
-    bandVis = covVis;
-  }else if (type_selection.slice(0, 3) == 'pro'){
-    bandVis = proVis;
-  }else if (type_selection.slice(0, 3) == 'agb'){
-    bandVis = bioVis;
-  }else if (type_selection.slice(0, 7) == 'covpred'){
-    bandVis = covVis;
-  }else if (type_selection.slice(0, 7) == 'propred'){
-    bandVis = proVis;
-  }else if (type_selection.slice(0, 7) == 'agbpred'){
-    bandVis = agbVis;
   }
   Map.addLayer(im_to_show, bandVis);
   makeLegend();
