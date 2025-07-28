@@ -213,6 +213,7 @@ function main_fn(band, rap_ic, out_im_type){
       var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
       return pred_im;
     }
+    var prediction_ic = ee.ImageCollection(regr_ic.map(prediction_fn));
   }else if (model_selection == model_list[1]){
     var regr_ic = regr_ic.select(['constant', 'ppt_sum', 'tmean_mean', band]);
     var result_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:3, numY:1}));
@@ -245,6 +246,7 @@ function main_fn(band, rap_ic, out_im_type){
       var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
       return pred_im;
     }
+    var prediction_ic = ee.ImageCollection(regr_ic.map(prediction_fn));
   }else if (model_selection == model_list[2]){
     var regr_ic = regr_ic.select(['constant', 'ppt_sum', band]);
     var result_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:2, numY:1}));
@@ -276,6 +278,7 @@ function main_fn(band, rap_ic, out_im_type){
       var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
       return pred_im;
     }
+    var prediction_ic = ee.ImageCollection(regr_ic.map(prediction_fn));
   }
   
   //Trend model statistics
@@ -335,7 +338,6 @@ function main_fn(band, rap_ic, out_im_type){
       return term_im;
     }
   }else if (out_im_type.slice(0, 7) == 'covpred' || out_im_type.slice(0, 7) == 'propred'|| out_im_type.slice(0, 7) == 'agbpred'){
-    var prediction_ic = ee.ImageCollection(regr_ic.map(prediction_fn));
     var pred_ic_list = prediction_ic.toList(999);
     var year = ee.Number.parse(out_im_type.slice(7));
     var year_idx = years_list.indexOf(year);
@@ -369,14 +371,13 @@ function main_fn(band, rap_ic, out_im_type){
     //   return pred_im;
     // }
     // var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
-    return f_im;
+    return coeff_im;
   }
 }
 
-
 //START DeBugGing TEsTING deBUggiNg tESTiNG TEsTiNG
-// var thing = main_fn('PFG', cover_ic, 'Debug');
-// Map.addLayer(thing, {min:0, max:3})
+var thing = main_fn('PFG', cover_ic, 'Debug');
+Map.addLayer(thing, {min:0, max:3})
 
 // var merge_props = merge_ic.getRegion(geometry, scale);
 // var merge_props = merge_props.slice(1);
