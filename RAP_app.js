@@ -1,5 +1,5 @@
-//THINGS THAT DON'T WORK
-//inspector
+//THINGS THAT DON'T WORK:
+//Above-ground biomass
 
 var prism_ic = ee.ImageCollection('projects/sat-io/open-datasets/OREGONSTATE/PRISM_800_MONTHLY');
 var first_im = prism_ic.first().select('ppt');
@@ -22,7 +22,7 @@ var bio_bands = ['afgAGB', 'pfgAGB', 'shrAGB', 'treAGB'];
 var cover_ic = ee.ImageCollection('projects/rap-data-365417/assets/vegetation-cover-v3');
 var prod_ic = ee.ImageCollection('projects/rap-data-365417/assets/npp-partitioned-v3');
 var mat_ic = ee.ImageCollection('projects/rap-data-365417/assets/gridmet-MAT');
-var metric_strs = ['rmse', 'rsqr', 'rsqrA', 'Fconf', 'Tconf'];
+var metric_strs = ['avg', 'sdev', 'rmse', 'rsqr', 'rsqrA', 'Fconf', 'Tconf'];
 var model_list = ['A1*pr + A2*tx + A3*tn + A4*td + A5*vx + A6*vn + K1', 'B1*pr + B2*tm + K2', 'C1*pr + K3'];
 var coeff_list = ['Atrend', 'Ktrend', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'B1', 'B2', 'C1', 'K1', 'K2', 'K3'];
 var coeff_internal_list = ['c2', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c2', 'c3', 'c2', 'c1', 'c1', 'c1'];
@@ -34,26 +34,22 @@ var ic_selection = cover_ic;
 var type_selection = 'cov2000';
 ////////////////////////////
 
-var model_selection = model_list[2];
-//var model_selection = model_list[2];
+var model_selection = model_list[0];
 var n = years_list.size();
-var k = ee.Number(6);
-var dof = n.subtract(k).subtract(1);
+
 //for F-statistic look-up table
-//n - k = 39 - 6 = 33 //n - k = 39 - 2 = 37 //n - k = 39 - 1 = 38
-//k - 1 = 6 - 1 = 5   //k - 1 = 2 - 1 = 1   //k - 1 = 1 - 1 = 0
+//n - k = 39 - 6 = 33 //36 //37
+//k - 1 = 6 - 1 = 5   //2   //1
 //MODEL ZERO   //MODEL ONE   //MODEL TWO
-//1% = 3.630   //1% = 7.373  //1% = 2.712
-//5% = 2.503   //5% = 4.105  //5% = 2.024
-//10% = 2.030  //10% = 2.846 //10% = 1.686
+//1% = 3.630   //1% = 5.248  //1% = 7.373
+//5% = 2.503   //5% = 3.259  //5% = 4.105
+//10% = 2.030  //10% = 2.456 //10% = 2.846
 //for T-statistic look-up
 //df = n - 1 = 39 - 1 = 38
-//MODEL ZERO   //MODEL ONE   //MODEL TWO
-//1% = 2.712   //1% = 2.712  //1% = 2.712
-//5% = 2.024   //5% = 2.024  //5% = 2.024
-//10% = 1.686  //10% = 1.686 //10% = 1.686
-
-
+//MODEL ZERO
+//1% = 2.712
+//5% = 2.024
+//10% = 1.686
 
 var first_im = cover_ic.first();
 var proj = first_im.projection().getInfo();
@@ -187,6 +183,8 @@ function main_fn(band, rap_ic, out_im_type){
     var result_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:7, numY:1}));
     var rmsr_im = result_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
     var rss_im = rmsr_im.pow(2).multiply(n);
+    var k = ee.Number(6);
+    var dof = n.subtract(k).subtract(1);
     var sSquare_im = rss_im.divide(dof);
     var yVariance_im = regr_ic.select(band).reduce(ee.Reducer.sampleVariance());
     var rSquare_im = ee.Image(1).subtract(ee.Image(rss_im.divide(yVariance_im.multiply(n.subtract(1)))));
@@ -224,6 +222,8 @@ function main_fn(band, rap_ic, out_im_type){
     var result_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:3, numY:1}));
     var rmsr_im = result_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
     var rss_im = rmsr_im.pow(2).multiply(n);
+    var k = ee.Number(2);
+    var dof = n.subtract(k).subtract(1);
     var sSquare_im = rss_im.divide(dof);
     var yVariance_im = regr_ic.select(band).reduce(ee.Reducer.sampleVariance());
     var rSquare_im = ee.Image(1).subtract(ee.Image(rss_im.divide(yVariance_im.multiply(n.subtract(1)))));
@@ -235,9 +235,9 @@ function main_fn(band, rap_ic, out_im_type){
     var bot_im = ee.Image(ee.Image(1).subtract(rSquare_im)).divide(n.subtract(k).subtract(1));
     var f_im = top_im.divide(bot_im);
     var zero_im = rmsr_im.lt(0.0);
-    var ninenine_im = zero_im.where(f_im.gte(7.373), 1);
-    var ninefive_im = zero_im.where(f_im.gte(4.105), 1);
-    var ninezero_im = zero_im.where(f_im.gte(2.846), 1);
+    var ninenine_im = zero_im.where(f_im.gte(5.248), 1);
+    var ninefive_im = zero_im.where(f_im.gte(3.259), 1);
+    var ninezero_im = zero_im.where(f_im.gte(2.456), 1);
     var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
     var conf_im = conf_im.setDefaultProjection('EPSG:4326', transform_new);
     var conf_im = conf_im.reproject({crs:proj.crs(), crsTransform:transform_new});
@@ -257,6 +257,8 @@ function main_fn(band, rap_ic, out_im_type){
     var result_im = regr_ic.reduce(ee.Reducer.linearRegression({numX:2, numY:1}));
     var rmsr_im = result_im.select('residuals').arrayProject([0]).arrayFlatten([['rmsr']]);
     var rss_im = rmsr_im.pow(2).multiply(n);
+    var k = ee.Number(1);
+    var dof = n.subtract(k).subtract(1);
     var sSquare_im = rss_im.divide(dof);
     var yVariance_im = regr_ic.select(band).reduce(ee.Reducer.sampleVariance());
     var rSquare_im = ee.Image(1).subtract(ee.Image(rss_im.divide(yVariance_im.multiply(n.subtract(1)))));
@@ -307,14 +309,20 @@ function main_fn(band, rap_ic, out_im_type){
   var coef_im = coef_im.reproject({crs:proj.crs(), crsTransform:transform_new});
   var t_im = coef_im.select('c2').divide(sslp_im);
   var zer_im = rmse_im.lt(0.0);
-  var ninenin_im = zer_im.where(t_im.gte(2.712), 1);
-  var ninefiv_im = zer_im.where(t_im.gte(2.024), 1);
-  var ninezer_im = zer_im.where(t_im.gte(1.686), 1);
+  var ninenin_im = zer_im.where(t_im.gte(7.373), 1);
+  var ninefiv_im = zer_im.where(t_im.gte(4.105), 1);
+  var ninezer_im = zer_im.where(t_im.gte(2.846), 1);
   var con_im = zer_im.add(ninenin_im).add(ninefiv_im).add(ninezer_im);
   var con_im = con_im.setDefaultProjection('EPSG:4326', transform_new);
   var con_im = con_im.reproject({crs:proj.crs(), crsTransform:transform_new});
 
-  if (out_im_type == 'rmse'){
+  if (out_im_type == 'avg'){
+    var avg_im = rap_ic.reduce(ee.Reducer.mean());
+    return avg_im;
+  }else if (out_im_type == 'sdev'){
+    var sdev_im = rap_ic.reduce(ee.Reducer.sampleStdDev());
+    return sdev_im;
+  }else if (out_im_type == 'rmse'){
     return rmsr_im;
   }else if (out_im_type == 'rsqr'){
     return rSquare_im;
@@ -383,37 +391,37 @@ function main_fn(band, rap_ic, out_im_type){
     //   return pred_im;
     // }
     // var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
-    return regr_ic;
+    return f_im;
   }
 }
 
 //START DeBugGing TEsTING deBUggiNg tESTiNG TEsTiNG
-var regr_ic = main_fn('PFG', cover_ic, 'Debug');
+//var f_im = main_fn('PFG', cover_ic, 'Debug');
 //Map.addLayer(f_im, {min:0, max:2})
 
-var regr_props = regr_ic.getRegion(geometry, scale);
-print(regr_props);
-var regr_props = regr_props.slice(1);
+// var regr_props = regr_ic.getRegion(geometry, scale);
+// print(regr_props);
+// var regr_props = regr_props.slice(1);
 
-function make_prop_feats_fnA(p_list){
-  var p_list = ee.List(p_list);
-  var a = p_list.get(4);
-  var b = p_list.get(5);
-  var c = p_list.get(6);
-  //var e = p_list.get(8);
-  //var f = p_list.get(9);
-  //var g = p_list.get(10);
-  //var ft = ee.Feature(null, {a:a, b:b, c:c, d:d, e:e, f:f, g:g});
-  var ft = ee.Feature(null, {a:a, b:b, c:c});
-  return ft;
-}
+// function make_prop_feats_fnA(p_list){
+//   var p_list = ee.List(p_list);
+//   var a = p_list.get(4);
+//   var b = p_list.get(5);
+//   var c = p_list.get(6);
+//   //var e = p_list.get(8);
+//   //var f = p_list.get(9);
+//   //var g = p_list.get(10);
+//   //var ft = ee.Feature(null, {a:a, b:b, c:c, d:d, e:e, f:f, g:g});
+//   var ft = ee.Feature(null, {a:a, b:b, c:c});
+//   return ft;
+// }
 
-var out_fc = ee.FeatureCollection(regr_props.map(make_prop_feats_fnA));
+// var out_fc = ee.FeatureCollection(regr_props.map(make_prop_feats_fnA));
 
-Export.table.toDrive({
-  collection:out_fc,
-  description:'merge_ic'
-});
+// Export.table.toDrive({
+//   collection:out_fc,
+//   description:'merge_ic'
+// });
 
 // var pred_ic = main_fn('PFG', cover_ic, 'Debug');
 // var pred_props = pred_ic.getRegion(geometry, scale);
@@ -649,11 +657,11 @@ function makeLegend(){
     style:{position:pos, padding:'8px 15px'}
   });
 
-  if ((type_selection.slice(0, 3) == 'cov') || (type_selection == 'rmse' && cover_bands.indexOf(band_selection) >= 0)){
+  if ((type_selection.slice(0, 3) == 'cov') || (type_selection.slice(0, 3) == 'avg' && cover_bands.indexOf(band_selection) >= 0) || (type_selection.slice(0, 3) == 'sde' && cover_bands.indexOf(band_selection) >= 0) || (type_selection == 'rmse' && cover_bands.indexOf(band_selection) >= 0)){
     var lTitle = 'frac. %';
-  }else if ((type_selection.slice(0, 3) == 'pro') || (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0)){
+  }else if ((type_selection.slice(0, 3) == 'pro') || (type_selection.slice(0, 3) == 'avg' && prod_bands.indexOf(band_selection) >= 0) || (type_selection.slice(0, 3) == 'sde' && prod_bands.indexOf(band_selection) >= 0) || (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0)){
     var lTitle = 'KgC/acre';
-  }else if ((type_selection.slice(0, 3) == 'agb') || (type_selection == 'rmse' && bio_bands.indexOf(band_selection) >= 0)){
+  }else if ((type_selection.slice(0, 3) == 'agb') || (type_selection.slice(0, 3) == 'avg' && bio_bands.indexOf(band_selection) >= 0) || (type_selection.slice(0, 3) == 'sde' && bio_bands.indexOf(band_selection) >= 0) || (type_selection == 'rmse' && bio_bands.indexOf(band_selection) >= 0)){
     var lTitle = 'lbs/acre';
   }else if (type_selection == 'rsqr'){
     var lTitle = 'R²';
