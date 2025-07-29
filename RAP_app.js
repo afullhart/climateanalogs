@@ -1,5 +1,5 @@
 //THINGS THAT DON'T WORK
-//wrong units for rsqr, rsqrA
+//inspector
 
 var prism_ic = ee.ImageCollection('projects/sat-io/open-datasets/OREGONSTATE/PRISM_800_MONTHLY');
 var first_im = prism_ic.first().select('ppt');
@@ -504,18 +504,31 @@ var confVis = {
 };
 
 var widgetStyle = {
-  position:'bottom-center'
-};
+  position:'bottom-center'};
 
 var checkStyle = {
-  position:'bottom-center'
-};
+  position:'bottom-center'};
 
 var chartPanelStyle = {
   position:'bottom-center', 
   stretch:'vertical',
   height:'400px',
   width:'400px',
+  margin:'10px 10px'};
+
+var pixelLabelStyle = {
+  height:'100px',
+  width:'100px',
+  padding:'0px',
+  margin:'0px',
+  position:'middle-center',
+  fontSize:'12px'};
+
+var pixelPanelStyle = {
+  position:'bottom-center', 
+  stretch:'vertical',
+  height:'200px',
+  width:'200px',
   margin:'10px 10px'};
 
 var infoLabelStyle = {
@@ -526,13 +539,11 @@ var infoLabelStyle = {
   padding:'1px',
   margin:'2px',
   textAlign:'left',
-  fontSize:'12px'
-};
+  fontSize:'12px'};
 
 var infoCheckStyle = {
   position:'top-left',
-  fontSize:'12px'
-};
+  fontSize:'12px'};
 
 var textPanelStyle = {
   position:'bottom-center', 
@@ -611,6 +622,7 @@ var legend_panel = ui.Panel({
 
 var chart_panelA = ui.Panel({style:chartPanelStyle});
 var chart_panelB = ui.Panel({style:chartPanelStyle});
+var pixel_panel = ui.Panel({style:pixelPanelStyle});
 
 /////////////////
 //Legend funcion
@@ -636,6 +648,10 @@ function makeLegend(){
     var lTitle = 'KgC/acre';
   }else if ((type_selection.slice(0, 3) == 'agb') || (type_selection == 'rmse' && bio_bands.indexOf(band_selection) >= 0)){
     var lTitle = 'lbs/acre';
+  }else if (type_selection == 'rsqr'){
+    var lTitle = 'R²';
+  }else if (type_selection == 'rsqrA'){
+    var lTitle = 'R² Adj.';
   }else if (type_selection.indexOf('coeffK') >= 0){
     var lTitle = 'Intercept (y)';
   }else{
@@ -682,8 +698,7 @@ function makeLegend(){
           padding:'10px',
           margin:'0px',
           border:'1px solid black',
-          fontSize:'10px'
-        }
+          fontSize:'10px'}
       });
     
       var label = ui.Label({
@@ -692,8 +707,7 @@ function makeLegend(){
           padding:'6px',
           margin:'0px',
           position:'middle-left',
-          fontSize:'12px'
-        }
+          fontSize:'12px'}
       });
     
       var row = ui.Panel({
@@ -721,7 +735,7 @@ function makeLegend(){
 function renderModel(model_string){
   Map.layers().reset();
   model_selection = model_string;
-  var im_to_show = main_fn(band_selection, ic_selection, type_selection);
+  im_to_show = main_fn(band_selection, ic_selection, type_selection);
   Map.addLayer(im_to_show, bandVis);
   makeLegend();
 }
@@ -775,7 +789,7 @@ function renderVariable(var_selection){
       type_selection = type_selection.replace('pro', 'agb').slice(0, -4).concat(year);
     }
   }
-  var im_to_show = main_fn(band_selection, ic_selection, type_selection);
+  im_to_show = main_fn(band_selection, ic_selection, type_selection);
   if (type_selection.slice(0, 3) == 'cov'){
     bandVis = covVis;
   }else if (type_selection.slice(0, 3) == 'pro'){
@@ -840,7 +854,7 @@ main_panel.add(variable_dropdown);
 function renderMetric(metric_selection){
   Map.layers().reset();
   type_selection = metric_selection;
-  var im_to_show = main_fn(band_selection, ic_selection, type_selection);
+  im_to_show = main_fn(band_selection, ic_selection, type_selection);
   if (type_selection == 'rmse' && cover_bands.indexOf(band_selection) >= 0){
     bandVis = rmseCovVis;
   }else if (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0){
@@ -891,7 +905,7 @@ function renderCoeff(coeff_str){
   var im_max = coeff_map[coeff_str]['max'];
   var im_min = coeff_map[coeff_str]['min'];
   bandVis = {min:im_min, max:im_max, palette:palettes.colorbrewer.BrBG[7]};
-  var im_to_show = main_fn(band_selection, ic_selection, type_selection);
+  im_to_show = main_fn(band_selection, ic_selection, type_selection);
   Map.addLayer(im_to_show, bandVis);
   makeLegend();
 }
@@ -917,7 +931,7 @@ function renderYearA(year_selection){
   }else if (bio_bands.indexOf(band_selection) != -1){
     type_selection = 'agb'.concat(year_selection);
   }
-  var im_to_show = main_fn(band_selection, ic_selection, type_selection);
+  im_to_show = main_fn(band_selection, ic_selection, type_selection);
   if (type_selection.slice(0, 3) == 'cov'){
     bandVis = covVis;
   }else if (type_selection.slice(0, 3) == 'pro'){
@@ -950,7 +964,7 @@ function renderYearB(year_selection){
   }else if (bio_bands.indexOf(band_selection) != -1){
     type_selection = 'agbpred'.concat(year_selection);
   }
-  var im_to_show = main_fn(band_selection, ic_selection, type_selection);
+  im_to_show = main_fn(band_selection, ic_selection, type_selection);
   if (type_selection.slice(0, 7) == 'covpred'){
     bandVis = covVis;
   }else if (type_selection.slice(0, 7) == 'propred'){
@@ -1099,6 +1113,53 @@ var trend_checkbox = ui.Checkbox({
 });
 
 main_panel.add(trend_checkbox);
+
+/////////////////////
+//Render Pixel Value
+
+function makePlotC(point_geo){
+  var point_fc = im_to_show.sample(point_geo, scale, proj);
+  var prop_ft = point_fc.first();
+  var prop_names = prop_ft.propertyNames();
+  var prop_val = prop_ft.get(prop_names.get(0));
+  var pixel_label = ui.Label({
+    value:prop_val.getInfo(),
+    style:pixelLabelStyle
+  });
+  return pixel_label;
+}
+
+function clickCallbackC(clickInfo_obj){
+  Map.remove(pixel_panel);
+  var lat = clickInfo_obj.lat;
+  var lon = clickInfo_obj.lon;
+  var pt = ee.Geometry.Point([lon, lat]);
+  var pixel_label = makePlotC(pt);
+  pixel_panel = ui.Panel({
+    widgets:pixel_label,
+    layout:ui.Panel.Layout.Flow('horizontal')
+  });
+  Map.add(pixel_panel);
+}
+
+function renderInspector(checkbox_bool){
+  if (checkbox_bool === true){
+    Map.onClick(clickCallbackC);
+  }
+  else{
+    Map.unlisten();
+    Map.remove(pixel_panel);
+    pixel_panel = ui.Panel({style:pixelPanelStyle});
+  }
+}
+
+var inspect_checkbox = ui.Checkbox({
+  label:'Pixel Value on Click',
+  onChange:renderInspector,
+  style:checkStyle
+});
+
+main_panel.add(inspect_checkbox);
 
 //////////////////
 //Render info box
