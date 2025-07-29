@@ -34,21 +34,26 @@ var ic_selection = cover_ic;
 var type_selection = 'cov2000';
 ////////////////////////////
 
-var model_selection = model_list[0];
+var model_selection = model_list[2];
+//var model_selection = model_list[2];
 var n = years_list.size();
 var k = ee.Number(6);
 var dof = n.subtract(k).subtract(1);
 //for F-statistic look-up table
-//n - k = 39 - 6 = 33
-//k - 1 = 6 - 1 = 5
-//1% = 3.630
-//5% = 2.503
-//10% = 2.030
+//n - k = 39 - 6 = 33 //n - k = 39 - 2 = 37 //n - k = 39 - 1 = 38
+//k - 1 = 6 - 1 = 5   //k - 1 = 2 - 1 = 1   //k - 1 = 1 - 1 = 0
+//MODEL ZERO   //MODEL ONE   //MODEL TWO
+//1% = 3.630   //1% = 7.373  //1% = 2.712
+//5% = 2.503   //5% = 4.105  //5% = 2.024
+//10% = 2.030  //10% = 2.846 //10% = 1.686
 //for T-statistic look-up
 //df = n - 1 = 39 - 1 = 38
-//1% = 2.712
-//5% = 2.024
-//10% = 1.686
+//MODEL ZERO   //MODEL ONE   //MODEL TWO
+//1% = 2.712   //1% = 2.712  //1% = 2.712
+//5% = 2.024   //5% = 2.024  //5% = 2.024
+//10% = 1.686  //10% = 1.686 //10% = 1.686
+
+
 
 var first_im = cover_ic.first();
 var proj = first_im.projection().getInfo();
@@ -230,9 +235,9 @@ function main_fn(band, rap_ic, out_im_type){
     var bot_im = ee.Image(ee.Image(1).subtract(rSquare_im)).divide(n.subtract(k).subtract(1));
     var f_im = top_im.divide(bot_im);
     var zero_im = rmsr_im.lt(0.0);
-    var ninenine_im = zero_im.where(f_im.gte(3.630), 1);
-    var ninefive_im = zero_im.where(f_im.gte(2.503), 1);
-    var ninezero_im = zero_im.where(f_im.gte(2.030), 1);
+    var ninenine_im = zero_im.where(f_im.gte(7.373), 1);
+    var ninefive_im = zero_im.where(f_im.gte(4.105), 1);
+    var ninezero_im = zero_im.where(f_im.gte(2.846), 1);
     var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
     var conf_im = conf_im.setDefaultProjection('EPSG:4326', transform_new);
     var conf_im = conf_im.reproject({crs:proj.crs(), crsTransform:transform_new});
@@ -263,9 +268,9 @@ function main_fn(band, rap_ic, out_im_type){
     var bot_im = ee.Image(ee.Image(1).subtract(rSquare_im)).divide(n.subtract(k).subtract(1));
     var f_im = top_im.divide(bot_im);
     var zero_im = rmsr_im.lt(0.0);
-    var ninenine_im = zero_im.where(f_im.gte(3.630), 1);
-    var ninefive_im = zero_im.where(f_im.gte(2.503), 1);
-    var ninezero_im = zero_im.where(f_im.gte(2.030), 1);
+    var ninenine_im = zero_im.where(f_im.gte(7.373), 1);
+    var ninefive_im = zero_im.where(f_im.gte(4.105), 1);
+    var ninezero_im = zero_im.where(f_im.gte(2.846), 1);
     var conf_im = zero_im.add(ninenine_im).add(ninefive_im).add(ninezero_im);
     var conf_im = conf_im.setDefaultProjection('EPSG:4326', transform_new);
     var conf_im = conf_im.reproject({crs:proj.crs(), crsTransform:transform_new});
@@ -378,36 +383,37 @@ function main_fn(band, rap_ic, out_im_type){
     //   return pred_im;
     // }
     // var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
-    return coeff_im;
+    return regr_ic;
   }
 }
 
 //START DeBugGing TEsTING deBUggiNg tESTiNG TEsTiNG
-//var thing = main_fn('PFG', cover_ic, 'Debug');
-//Map.addLayer(thing, {min:0, max:3})
+var regr_ic = main_fn('PFG', cover_ic, 'Debug');
+//Map.addLayer(f_im, {min:0, max:2})
 
-// var merge_props = merge_ic.getRegion(geometry, scale);
-// var merge_props = merge_props.slice(1);
+var regr_props = regr_ic.getRegion(geometry, scale);
+print(regr_props);
+var regr_props = regr_props.slice(1);
 
-// function make_prop_feats_fnA(p_list){
-//   var p_list = ee.List(p_list);
-//   var a = p_list.get(4);
-//   var b = p_list.get(5);
-//   var c = p_list.get(6);
-//   var d = p_list.get(7);
-//   var e = p_list.get(8);
-//   var f = p_list.get(9);
-//   var g = p_list.get(10);
-//   var ft = ee.Feature(null, {a:a, b:b, c:c, d:d, e:e, f:f, g:g});
-//   return ft;
-// }
+function make_prop_feats_fnA(p_list){
+  var p_list = ee.List(p_list);
+  var a = p_list.get(4);
+  var b = p_list.get(5);
+  var c = p_list.get(6);
+  //var e = p_list.get(8);
+  //var f = p_list.get(9);
+  //var g = p_list.get(10);
+  //var ft = ee.Feature(null, {a:a, b:b, c:c, d:d, e:e, f:f, g:g});
+  var ft = ee.Feature(null, {a:a, b:b, c:c});
+  return ft;
+}
 
-// var out_fc = ee.FeatureCollection(merge_props.map(make_prop_feats_fnA));
+var out_fc = ee.FeatureCollection(regr_props.map(make_prop_feats_fnA));
 
-// Export.table.toDrive({
-//   collection:out_fc,
-//   description:'merge_ic'
-// });
+Export.table.toDrive({
+  collection:out_fc,
+  description:'merge_ic'
+});
 
 // var pred_ic = main_fn('PFG', cover_ic, 'Debug');
 // var pred_props = pred_ic.getRegion(geometry, scale);
@@ -517,18 +523,19 @@ var chartPanelStyle = {
   margin:'10px 10px'};
 
 var pixelLabelStyle = {
-  height:'100px',
-  width:'100px',
+  height:'50px',
+  width:'50px',
   padding:'0px',
   margin:'0px',
-  position:'middle-center',
-  fontSize:'12px'};
+  position:'middle-left',
+  fontSize:'16px',
+  fontWeight: 'bold'};
 
 var pixelPanelStyle = {
   position:'bottom-center', 
   stretch:'vertical',
-  height:'200px',
-  width:'200px',
+  height:'60px',
+  width:'60px',
   margin:'10px 10px'};
 
 var infoLabelStyle = {
@@ -1137,7 +1144,8 @@ function clickCallbackC(clickInfo_obj){
   var pixel_label = makePlotC(pt);
   pixel_panel = ui.Panel({
     widgets:pixel_label,
-    layout:ui.Panel.Layout.Flow('horizontal')
+    layout:ui.Panel.Layout.Flow('horizontal'),
+    style:pixelPanelStyle
   });
   Map.add(pixel_panel);
 }
