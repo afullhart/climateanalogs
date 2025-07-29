@@ -1,5 +1,7 @@
 //THINGS THAT DON'T WORK:
 //Above-ground biomass
+//X-axis dates
+
 
 var prism_ic = ee.ImageCollection('projects/sat-io/open-datasets/OREGONSTATE/PRISM_800_MONTHLY');
 var first_im = prism_ic.first().select('ppt');
@@ -369,7 +371,13 @@ function main_fn(band, rap_ic, out_im_type){
     var rap_im = ee.Image(rap_ic_list.get(year_idx));
     return rap_im;
   }else if (out_im_type == 'OnetoOne'){
-    var prediction_ic = ee.ImageCollection(regr_ic.map(prediction_fn));
+    if (model_selection == model_list[0]){
+      var prediction_ic = predictionA_ic;
+    }else if (model_selection == model_list[1]){
+      var prediction_ic = predictionB_ic;
+    }else if (model_selection == model_list[2]){
+      var prediction_ic = predictionC_ic;
+    }
     var oneone_ic = rap_ic.merge(prediction_ic);
     return oneone_ic;
   }else if (out_im_type == 'Trend'){
@@ -870,7 +878,20 @@ function renderMetric(metric_selection){
   Map.layers().reset();
   type_selection = metric_selection;
   im_to_show = main_fn(band_selection, ic_selection, type_selection);
-  if (type_selection == 'rmse' && cover_bands.indexOf(band_selection) >= 0){
+
+  if (type_selection == 'avg' && cover_bands.indexOf(band_selection) >= 0){
+    bandVis = covVis;
+  }else if (type_selection == 'avg' && prod_bands.indexOf(band_selection) >= 0){
+    bandVis = proVis;
+  }else if (type_selection == 'avg' && bio_bands.indexOf(band_selection) >= 0){
+    bandVis = bioVis;
+  }else if (type_selection == 'sdev' && cover_bands.indexOf(band_selection) >= 0){
+    bandVis = covVis;
+  }else if (type_selection == 'sdev' && prod_bands.indexOf(band_selection) >= 0){
+    bandVis = proVis;
+  }else if (type_selection == 'sdev' && bio_bands.indexOf(band_selection) >= 0){
+    bandVis = bioVis;
+  }else if (type_selection == 'rmse' && cover_bands.indexOf(band_selection) >= 0){
     bandVis = rmseCovVis;
   }else if (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0){
     bandVis = rmseProVis;
