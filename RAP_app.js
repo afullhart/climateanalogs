@@ -1,7 +1,8 @@
 //THINGS THAT DON'T WORK:
 //Above-ground biomass
 //X-axis dates
-
+//Pixel value on click for AVG/SDEV
+//README
 
 var prism_ic = ee.ImageCollection('projects/sat-io/open-datasets/OREGONSTATE/PRISM_800_MONTHLY');
 var first_im = prism_ic.first().select('ppt');
@@ -322,7 +323,9 @@ function main_fn(band, rap_ic, out_im_type){
     var avg_im = rap_ic.reduce(ee.Reducer.mean());
     return avg_im;
   }else if (out_im_type == 'sdev'){
+    var avg_im = rap_ic.reduce(ee.Reducer.mean());
     var sdev_im = rap_ic.reduce(ee.Reducer.sampleStdDev());
+    var sdev_im = sdev_im.divide(avg_im).multiply(100.0);
     return sdev_im;
   }else if (out_im_type == 'rmse'){
     return rmsr_im;
@@ -665,12 +668,14 @@ function makeLegend(){
     style:{position:pos, padding:'8px 15px'}
   });
 
-  if ((type_selection.slice(0, 3) == 'cov') || (type_selection.slice(0, 3) == 'avg' && cover_bands.indexOf(band_selection) >= 0) || (type_selection.slice(0, 3) == 'sde' && cover_bands.indexOf(band_selection) >= 0) || (type_selection == 'rmse' && cover_bands.indexOf(band_selection) >= 0)){
+  if ((type_selection.slice(0, 3) == 'cov') || (type_selection.slice(0, 3) == 'avg' && cover_bands.indexOf(band_selection) >= 0) || (type_selection == 'rmse' && cover_bands.indexOf(band_selection) >= 0)){
     var lTitle = 'frac. %';
-  }else if ((type_selection.slice(0, 3) == 'pro') || (type_selection.slice(0, 3) == 'avg' && prod_bands.indexOf(band_selection) >= 0) || (type_selection.slice(0, 3) == 'sde' && prod_bands.indexOf(band_selection) >= 0) || (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0)){
+  }else if ((type_selection.slice(0, 3) == 'pro') || (type_selection.slice(0, 3) == 'avg' && prod_bands.indexOf(band_selection) >= 0) || (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0)){
     var lTitle = 'KgC/acre';
-  }else if ((type_selection.slice(0, 3) == 'agb') || (type_selection.slice(0, 3) == 'avg' && bio_bands.indexOf(band_selection) >= 0) || (type_selection.slice(0, 3) == 'sde' && bio_bands.indexOf(band_selection) >= 0) || (type_selection == 'rmse' && bio_bands.indexOf(band_selection) >= 0)){
+  }else if ((type_selection.slice(0, 3) == 'agb') || (type_selection.slice(0, 3) == 'avg' && bio_bands.indexOf(band_selection) >= 0) || (type_selection == 'rmse' && bio_bands.indexOf(band_selection) >= 0)){
     var lTitle = 'lbs/acre';
+  }else if (type_selection.slice(0, 3) == 'sde'){
+    var lTitle = '% of Avg.';
   }else if (type_selection == 'rsqr'){
     var lTitle = 'R²';
   }else if (type_selection == 'rsqrA'){
