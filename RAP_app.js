@@ -518,8 +518,7 @@ var mainPanelStyle = {
   position:'top-right',
   padding:'6px 6px', 
   backgroundColor:'rgba(255, 255, 255, 0.7)', 
-  border:'1px solid black',
-  overflowY:'auto'};
+  border:'1px solid black'};
 
 var chartPanelStyle = {
   position:'bottom-center', 
@@ -1271,5 +1270,5 @@ var info_checkbox = ui.Checkbox({
 
 main_panel.add(info_checkbox);
 
-ui.root.add(main_panel);
-//Map.add(main_panel);
+//ui.root.add(main_panel);
+Map.add(main_panel);
