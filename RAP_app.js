@@ -387,25 +387,11 @@ function main_fn(band, rap_ic, out_im_type){
     return rap_ic;
   }else if (out_im_type == 'Debug'){
     print('DEBUG OUTPUT');
-    // function prediction_fn(imobj){
-    //   var cli_im = ee.Image(imobj);
-    //   var c1 = coeff_im.select('c1');
-    //   var c2 = cli_im.select('ppt_sum').multiply(coeff_im.select('c2'));
-    //   var c3 = cli_im.select('tmax_mean').multiply(coeff_im.select('c3'));
-    //   var c4 = cli_im.select('tmin_mean').multiply(coeff_im.select('c4'));
-    //   var c5 = cli_im.select('tdmean_mean').multiply(coeff_im.select('c5'));
-    //   var c6 = cli_im.select('vpdmax_mean').multiply(coeff_im.select('c6'));
-    //   var c7 = cli_im.select('vpdmin_mean').multiply(coeff_im.select('c7'));
-    //   var pred_im = c1.add(c2).add(c3).add(c4).add(c5).add(c6).add(c7);
-    //   var pred_im = pred_im.setDefaultProjection('EPSG:4326', transform_new);
-    //   var pred_im = pred_im.reproject({crs:proj.crs(), crsTransform:transform_new});
-    //   return pred_im;
-    // }
-    // var prediction_ic = ee.ImageCollection(merge_ic.map(prediction_fn));
     return f_im;
   }
 }
 
+////////////////////////////////////////////////////
 //START DeBugGing TEsTING deBUggiNg tESTiNG TEsTiNG
 //var f_im = main_fn('PFG', cover_ic, 'Debug');
 //Map.addLayer(f_im, {min:0, max:2})
@@ -452,7 +438,7 @@ function main_fn(band, rap_ic, out_im_type){
 //   description:'vectorsPred'
 // });
 //END DeBugGing TEsTING dEbuGgINg tESTiNG TEsTiNG
-
+/////////////////////////////////////////////////
 
 
 ///////////////////////
@@ -470,69 +456,70 @@ var palettes = require('users/gena/packages:palettes');
 var rmseCovVis = {
   min:0,
   max:5,
-  palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7]
-};
+  palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7]};
 
 var palettes = require('users/gena/packages:palettes');
 var rmseProVis = {
   min:0,
   max:200,
-  palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7]
-};
+  palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7]};
 
 var palettes = require('users/gena/packages:palettes');
 var rmseBioVis = {
   min:0,
   max:250,
-  palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7]
-};
+  palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7]};
 
 var palettes = require('users/gena/packages:palettes');
 var rsqrVis = {
   min:0,
   max:0.6,
-  palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7].reverse()
-};
+  palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7].reverse()};
 
 var palettes = require('users/gena/packages:palettes');
 var rsqrAdjVis = {
   min:0,
   max:0.3,
-  palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7].reverse()
-};
+  palette:palettes.kovesi.diverging_linear_bjr_30_55_c53[7].reverse()};
 
 var palettes = require('users/gena/packages:palettes');
 var covVis = {
   min:0,
   max:50,
-  palette:palettes.niccoli.cubicl[7]
-};
+  palette:palettes.niccoli.cubicl[7]};
 
 var palettes = require('users/gena/packages:palettes');
 var proVis = {
   min:0,
   max:500,
-  palette:palettes.niccoli.cubicl[7]
-};
+  palette:palettes.niccoli.cubicl[7]};
 
 var palettes = require('users/gena/packages:palettes');
 var bioVis = {
   min:0,
   max:500,
-  palette:palettes.niccoli.cubicl[7]
-};
+  palette:palettes.niccoli.cubicl[7]};
 
 var confVis = {
   min:0,
   max:3,
-  palette:['#FFFFFF', '#d7481d', '#59f720', '#800080']
-};
+  palette:['#FFFFFF', '#d7481d', '#59f720', '#800080']};
 
 var widgetStyle = {
-  position:'bottom-center'};
+  position:'bottom-center',
+  backgroundColor:'rgba(255, 255, 255, 0.7)'};
 
 var checkStyle = {
-  position:'bottom-center'};
+  position:'bottom-center',
+  backgroundColor:'rgba(255, 255, 255, 0.7)',
+  fontSize:'12px'};
+
+var mainPanelStyle = {
+  position:'top-right',
+  padding:'6px 6px', 
+  backgroundColor:'rgba(255, 255, 255, 0.7)', 
+  border:'1px solid black',
+  overflowY:'auto'};
 
 var chartPanelStyle = {
   position:'bottom-center', 
@@ -565,10 +552,6 @@ var infoLabelStyle = {
   padding:'1px',
   margin:'2px',
   textAlign:'left',
-  fontSize:'12px'};
-
-var infoCheckStyle = {
-  position:'top-left',
   fontSize:'12px'};
 
 var textPanelStyle = {
@@ -639,7 +622,7 @@ Map.addLayer(im_to_show, bandVis);
 
 var main_panel = ui.Panel({
   layout:ui.Panel.Layout.flow('vertical'),
-  style: {width: '300px'}
+  style:mainPanelStyle
 });
 
 var legend_panel = ui.Panel({
@@ -1289,3 +1272,4 @@ var info_checkbox = ui.Checkbox({
 main_panel.add(info_checkbox);
 
 ui.root.add(main_panel);
+//Map.add(main_panel);
