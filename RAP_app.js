@@ -1,7 +1,7 @@
 //THINGS THAT DON'T WORK:
 //Above-ground biomass
 //X-axis dates
-//Pixel value on click for AVG/SDEV
+//Pixel value on click for metric layers
 //README
 
 var prism_ic = ee.ImageCollection('projects/sat-io/open-datasets/OREGONSTATE/PRISM_800_MONTHLY');
@@ -153,7 +153,7 @@ function main_fn(band, rap_ic, out_im_type){
 
   function nppscaled2npp_fn(yr_idx){
     var rap_im = ee.Image(rap_ic_list.get(yr_idx));
-    var npp_im = rap_im.multiply(0.0001).multiply(4046.86); // NPP scalar, m2 to acres
+    var npp_im = rap_im.multiply(0.0001).multiply(2.20462).multiply(4046.86); // NPP scalar, KgC to lbsC, m2 to acre
     return npp_im;
   }
 
@@ -507,21 +507,23 @@ var confVis = {
 
 var widgetStyle = {
   position:'bottom-center',
+  padding:'0px 0px',
   backgroundColor:'rgba(255, 255, 255, 0.7)'};
 
 var checkStyle = {
   position:'bottom-center',
+  padding:'0px 0px',
   backgroundColor:'rgba(255, 255, 255, 0.7)',
   fontSize:'12px'};
 
 var mainPanelStyle = {
   position:'top-right',
-  padding:'6px 6px', 
+  padding:'0px 0px', 
   backgroundColor:'rgba(255, 255, 255, 0.7)', 
   border:'1px solid black'};
 
 var headerStyle = {
-  padding:'1px 1px',
+  padding:'0px 0px',
   backgroundColor:'rgba(255, 255, 255, 0.7)', 
   fontSize:'12px'}
 
@@ -638,7 +640,7 @@ var chart_panelB = ui.Panel({style:chartPanelStyle});
 var pixel_panel = ui.Panel({style:pixelPanelStyle});
 
 /////////////////
-//Legend funcion
+//Legend function
 
 function makeLegend(){
 
@@ -658,7 +660,7 @@ function makeLegend(){
   if ((type_selection.slice(0, 3) == 'cov') || (type_selection.slice(0, 3) == 'avg' && cover_bands.indexOf(band_selection) >= 0) || (type_selection == 'rmse' && cover_bands.indexOf(band_selection) >= 0)){
     var lTitle = 'frac. %';
   }else if ((type_selection.slice(0, 3) == 'pro') || (type_selection.slice(0, 3) == 'avg' && prod_bands.indexOf(band_selection) >= 0) || (type_selection == 'rmse' && prod_bands.indexOf(band_selection) >= 0)){
-    var lTitle = 'KgC/acre';
+    var lTitle = 'lbs/acre';
   }else if ((type_selection.slice(0, 3) == 'agb') || (type_selection.slice(0, 3) == 'avg' && bio_bands.indexOf(band_selection) >= 0) || (type_selection == 'rmse' && bio_bands.indexOf(band_selection) >= 0)){
     var lTitle = 'lbs/acre';
   }else if (type_selection.slice(0, 3) == 'sde'){
@@ -1201,38 +1203,42 @@ main_panel.add(inspect_checkbox);
 
 var info_str = 'OVERVIEW: \n' +
               'This app is built using the Google Earth Engine cloud platform and publically available datasets. \n' +
-              'The purpose is to visualize the Rangeland Assessment Platform (RAP) dataset of vegetation cover and growth \n' +
-              'and to explore connections between RAP and climate variables of the observational PRISM dataset. \n' +
-              'The spatial resolution is at ~800 m according to the resolution of PRISM, while RAP was resampled\n' +
+              'The purpose is to visualize the Rangeland Assessment Platform (RAP) ground cover dataset \n' +
+              'and to explore connections between RAP and the climate variables of the observational PRISM dataset. \n' +
+              'The spatial resolution is at ~800 m according to the resolution of PRISM, meaning RAP was resampled\n' +
               'and spatially averaged to this resolution from its native resolution of 30 m. The sensitivity of RAP \n' +
-              'to climate is quantified using multiple linear regressions to predict individual RAP variables \n' +
-              'based on PRISM variables as predictors. Each ~800 m pixel is fitted with it\'s own independet regression \n' +
-              'model. Also visualized is trend analysis of year-to-year RAP time series based on simple linear regression. \n' +
-              ' \n' +
+              'to climate is quantified using multiple linear regressions that predict individual RAP variables \n' +
+              'based on climate variables. Each ~800 m pixel is fitted with it\'s own independet regression model. \n' +
+              'Trend analysis of year-to-year RAP time series based on simple linear regression can also be visualized. \n' +
+              '\n' +
               '\n' +                
               'DEFINITIONS: \n' +
               'RAP: Rangeland Assessment Platform is a dataset with rangeland-specific vegetation growth and cover. \n' + 
               'PRISM: A US gridded observation climate dataset. In this case, the monthly ~800 m dataset is used. \n' +                
-              'AFG: Annual forbs and grass. Units (Frac. %). \n' + 
-              'PFG: Perennial forbs and grass. Units (Frac. %). \n' +
-              'BRG: Bare Ground. Units (Frac. %).\n' +
-              'SHR: Shurbs. Units (Frac. %). \n' +               
-              'TRE: Trees. Units (Frac. %). \n' +
-              'NPP: Net Primary Production (Kg C / m²) \n' + 
-              'AFGnpp: NPP of annual forbs and grass converted to aboveground biomass lbs/acre. \n' + 
-              'PFGnpp: NPP of perennial forbs and grass converted to aboveground biomass lbs/acre. \n' +
-              'SHRnpp: NPP of shrubs converted to aboveground biomass lbs/acre. \n' +               
-              'TREnpp: NPP of trees converted to aboveground biomass lbs/acre. \n' +
+              'AFG: Annual forbs and grass ground cover(Frac. %). \n' + 
+              'PFG: Perennial forbs and grass ground cover (Frac. %). \n' +
+              'BRG: Bare ground cover (Frac. %).\n' +
+              'SHR: Shurb ground cover (Frac. %). \n' +               
+              'TRE: Tree ground cover (Frac. %). \n' +
+              'NPP: Net primary production, units of pounds carbon per acre (lbs / acre). \n' + 
+              'AGB: Above ground biomass, units of pounds biomass per acre (lbs / acre). \n' + 
+              'afgNPP: NPP of annual forbs and grass (lbs/acre). \n' + 
+              'pfgNPP: NPP of perennial forbs and grass (lbs/acre). \n' +
+              'shrNPP: NPP of shrubs (lbs/acre). \n' +               
+              'treNPP: NPP of trees (lbs/acre). \n' +
+              'afgAGB: AGB of annual forbs and grass (lbs/acre). \n' + 
+              'pfgAGB: AGB of perennial forbs and grass (lbs/acre). \n' +
+              'shrAGB: AGB of shrubs (lbs/acre). \n' +               
+              'treAGB: AGB of trees (lbs/acre). \n' +
               'LR: linear regression is a statistical model of the relationship between a dependend variable and one \n' + 
               'or more independent variables. \n' + 
               '\n' + 
               'METHODOLOGY:  \n' +
               'Predictive statisticical models based on LR were used to predict RAP variables based on year-to-year \n' + 
-              'datapoints from 1986-2014. First, a multiple linear regression (MLR) is used to predict annual RAP variables\n' + 
-              'from annually averaged PRISM variables. Six PRISM predictor variables were used: precipitation, \n' + 
-              'mean max/min temperature, mean dewpoint temperature, and mean max/min vapor pressure deficit. \n' + 
-              'asdYAYAYAflkasdfljk \n' + 
-              'OKokOKOKOKOKOKOKOK \n' + 
+              'datapoints from 1986-2014. Multiple linear regression (MLR) is used to predict annual RAP variables\n' + 
+              'from annually averaged PRISM variables. Seven PRISM predictor variables were used: \n' + 
+              'precipitation (pr), mean max/min temperature (tx, tn), mean temperature (tm), mean dewpoint temperature (td)
+              'and mean max/min vapor pressure deficit (vx, vm). \n' + 
               '\n' + 
               'USAGE:  \n' +
               'Choosing any selection option will render a new map. For options that are not chosen, placeholder options \n' + 
@@ -1282,5 +1288,6 @@ var info_checkbox = ui.Checkbox({
 main_panel.add(info_checkbox);
 
 ui.root.add(main_panel);
+
 //Transparent panels only works with Map.add?
 //Map.add(main_panel);
