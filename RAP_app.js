@@ -520,6 +520,11 @@ var mainPanelStyle = {
   backgroundColor:'rgba(255, 255, 255, 0.7)', 
   border:'1px solid black'};
 
+var headerStyle = {
+  padding:'1px 1px',
+  backgroundColor:'rgba(255, 255, 255, 0.7)', 
+  fontSize:'12px'}
+
 var chartPanelStyle = {
   position:'bottom-center', 
   stretch:'vertical',
@@ -757,6 +762,7 @@ var model_dropdown = ui.Select({
   style:widgetStyle
 });
 
+main_panel.add(ui.Label({value:'Select Climate Regression Model', style:headerStyle}))
 main_panel.add(model_dropdown);
 
 /////////////////////
@@ -856,6 +862,7 @@ var variable_dropdown = ui.Select({
   style:widgetStyle
 });
 
+main_panel.add(ui.Label({value:'Selected RAP Variable', style:headerStyle}))
 main_panel.add(variable_dropdown);
 
 /////////////////////
@@ -904,6 +911,7 @@ var metric_dropdown = ui.Select({
   style:widgetStyle
 });
 
+main_panel.add(ui.Label({value:'View Metric', style:headerStyle}))
 main_panel.add(metric_dropdown);
 
 ///////////////////////////
@@ -940,6 +948,7 @@ var coeff_dropdown = ui.Select({
   style:widgetStyle
 });
 
+main_panel.add(ui.Label({value:'View Regression Coefficient', style:headerStyle}))
 main_panel.add(coeff_dropdown);
 
 ///////////////////
@@ -973,6 +982,7 @@ var year_dropdownA = ui.Select({
   style:widgetStyle
 });
 
+main_panel.add(ui.Label({value:'View RAP year', style:headerStyle}));
 main_panel.add(year_dropdownA);
 
 /////////////////////////
@@ -1006,6 +1016,7 @@ var year_dropdownB = ui.Select({
   style:widgetStyle
 });
 
+main_panel.add(ui.Label({value:'View Predicted RAP year', style:headerStyle}));
 main_panel.add(year_dropdownB);
 
 //////////////////////////
@@ -1270,5 +1281,6 @@ var info_checkbox = ui.Checkbox({
 
 main_panel.add(info_checkbox);
 
-//ui.root.add(main_panel);
-Map.add(main_panel);
+ui.root.add(main_panel);
+//Transparent panels only works with Map.add?
+//Map.add(main_panel);
