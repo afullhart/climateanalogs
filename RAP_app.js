@@ -537,15 +537,15 @@ var pixelLabelStyle = {
   width:'50px',
   padding:'0px',
   margin:'0px',
-  position:'middle-left',
+  position:'top-center',
   fontSize:'16px',
   fontWeight: 'bold'};
 
 var pixelPanelStyle = {
   position:'bottom-center', 
   stretch:'vertical',
-  height:'60px',
-  width:'60px',
+  height:'100px',
+  width:'100px',
   margin:'10px 10px'};
 
 var infoLabelStyle = {
@@ -1157,7 +1157,7 @@ function makePlotC(point_geo){
   var prop_names = prop_ft.propertyNames();
   var prop_val = prop_ft.get(prop_names.get(0));
   var pixel_label = ui.Label({
-    value:prop_val.getInfo(),
+    value:'Pixel Value:'.concat('\n').concat(prop_val.getInfo()),
     style:pixelLabelStyle
   });
   return pixel_label;
