@@ -1,9 +1,7 @@
 //THINGS THAT DON'T WORK:
-//Above-ground biomass
 //X-axis dates
 //Pixel value on click for metric layers
-//How AGB was calculated.
-//README
+//GitHub
 
 var prism_ic = ee.ImageCollection('projects/sat-io/open-datasets/OREGONSTATE/PRISM_800_MONTHLY');
 var first_im = prism_ic.first().select('ppt');
@@ -1191,33 +1189,32 @@ main_panel.add(inspect_checkbox);
 
 var info_str = 'OVERVIEW: \n' +
               'This app is built using the Google Earth Engine cloud platform and publically available datasets. \n' +
-              'The purpose is to visualize the Rangeland Assessment Platform (RAP) ground cover dataset \n' +
-              'and to explore connections between RAP and the climate variables of the observational PRISM dataset. \n' +
-              'The spatial resolution is at ~800 m according to the resolution of PRISM, meaning RAP was resampled\n' +
-              'and spatially averaged to this resolution from its native resolution of 30 m. The sensitivity of RAP \n' +
-              'to climate is quantified using multiple linear regressions that predict individual RAP variables \n' +
-              'based on climate variables. Each ~800 m pixel is fitted with it\'s own independet regression model. \n' +
-              'Trend analysis of year-to-year RAP time series based on simple linear regression can also be visualized. \n' +
-              '\n' +
-              '\n' +                
+              'With a coverage area of the southwestern US, the the Rangeland Assessment Platform (RAP) ground cover \n' +
+              'dataset is visualized, and connections are identified between RAP and climate variables of the  \n' +
+              'PRISM dataset. The spatial resolution is at ~800 m to match the resolution of PRISM, such that RAP\n' +
+              'was spatially averaged to this resolution from its native resolution of 30 m. The sensitivity of RAP \n' +
+              'to climate is quantified based on the success of multiple linear regressions to predict individual RAP \n' +
+              'RAP variables using only climate predictors. Each ~800 m pixel is fitted with it\'s own independent \n' +
+              'regression model. Trend analysis of year-to-year RAP time series based on simple linear regression \n' +
+              'of time series can also be visualized for each pixel. \n' +
+              '\n' +  
               'DEFINITIONS: \n' +
               'RAP: Rangeland Assessment Platform is a dataset with rangeland-specific vegetation growth and cover. \n' + 
-              'PRISM: A US gridded observation climate dataset. In this case, the monthly ~800 m dataset is used. \n' +                
-              'AFG: Annual forbs and grass ground cover(Frac. %). \n' + 
+              'PRISM: A US gridded observation climate dataset. In this case, monthly ~800 m data is annually averaged. \n' +               
+              'Ground Cover: The fraction of surface area covered by plants or other cover forms when viewed from above. \n' +
+              'NPP: Net primary production, units of pounds carbon per acre (lbs / acre). \n' + 
+              'AGB: Above ground biomass, units of pounds biomass per acre (lbs / acre). \n' + 
+              'AFG: Annual forbs and grass ground cover (Frac. %). \n' + 
               'PFG: Perennial forbs and grass ground cover (Frac. %). \n' +
               'BRG: Bare ground cover (Frac. %).\n' +
               'SHR: Shurb ground cover (Frac. %). \n' +               
               'TRE: Tree ground cover (Frac. %). \n' +
-              'NPP: Net primary production, units of pounds carbon per acre (lbs / acre). \n' + 
-              'AGB: Above ground biomass, units of pounds biomass per acre (lbs / acre). \n' + 
               'afgNPP: NPP of annual forbs and grass (lbs/acre). \n' + 
               'pfgNPP: NPP of perennial forbs and grass (lbs/acre). \n' +
               'shrNPP: NPP of shrubs (lbs/acre). \n' +               
               'treNPP: NPP of trees (lbs/acre). \n' +
               'afgAGB: AGB of annual forbs and grass estimated from NPP (lbs/acre). \n' + 
               'pfgAGB: AGB of perennial forbs and grass estimated from NPP (lbs/acre). \n' +
-              'shrAGB: AGB of shrubs estimated from NPP (lbs/acre). \n' +               
-              'treAGB: AGB of trees estimated from NPP (lbs/acre). \n' +
               'LR: linear regression is a statistical model of the relationship between a dependend variable and one \n' + 
               'or more independent variables. \n' + 
               'avg: Average value of RAP variable. \n' + 
@@ -1238,8 +1235,8 @@ var info_str = 'OVERVIEW: \n' +
               'statistically meaningful and are expressed as a percent confidence. The Fconf maps are determined \n' +
               'for the climate regression models and are based on the F-statistic, which indicates whether the overall \n' +
               'LR model is statistically significant. The Tconf map is determined for the trend analysis LR model, \n' +
-              'and indicates whether the slope cofficient of the LR is statistically significant. The estimated AGB \n' +
-              'uses the same methodology as the RAP website and the  \n' +
+              'and indicates whether the slope cofficient of the LR is statistically significant. Estimated AGB \n' +
+              'uses the same methodology as the RAP website.  \n' +
               '\n' + 
               'USAGE:  \n' +
               'Choosing any selection option will render a new map. For options that are not chosen, placeholder options \n' + 
