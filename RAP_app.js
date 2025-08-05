@@ -2,6 +2,7 @@
 //Above-ground biomass
 //X-axis dates
 //Pixel value on click for metric layers
+//How AGB was calculated.
 //README
 
 var prism_ic = ee.ImageCollection('projects/sat-io/open-datasets/OREGONSTATE/PRISM_800_MONTHLY');
@@ -311,13 +312,6 @@ function main_fn(band, rap_ic, out_im_type){
   var coef_im = coef_im.setDefaultProjection('EPSG:4326', transform_new);
   var coef_im = coef_im.reproject({crs:proj.crs(), crsTransform:transform_new});
   var t_im = coef_im.select('c2').divide(sslp_im);
-  var zer_im = rmse_im.lt(0.0);
-  var ninenin_im = zer_im.where(t_im.gte(7.373), 1);
-  var ninefiv_im = zer_im.where(t_im.gte(4.105), 1);
-  var ninezer_im = zer_im.where(t_im.gte(2.846), 1);
-  var con_im = zer_im.add(ninenin_im).add(ninefiv_im).add(ninezer_im);
-  var con_im = con_im.setDefaultProjection('EPSG:4326', transform_new);
-  var con_im = con_im.reproject({crs:proj.crs(), crsTransform:transform_new});
 
   if (out_im_type == 'avg'){
     var avg_im = rap_ic.reduce(ee.Reducer.mean());
@@ -544,27 +538,26 @@ var pixelLabelStyle = {
   fontWeight: 'bold'};
 
 var pixelPanelStyle = {
-  position:'bottom-center', 
-  stretch:'vertical',
   height:'100px',
   width:'100px',
+  position:'bottom-center',
   margin:'10px 10px'};
 
 var infoLabelStyle = {
-  height:'600px',
-  width:'500px',
-  position:'bottom-center',
-  whiteSpace:'pre',
+  height:'1500px',
+  width:'1000px',
+  position:'top-center',
+  whiteSpace:'preserve nowrap',
   padding:'1px',
   margin:'2px',
   textAlign:'left',
   fontSize:'12px'};
 
 var textPanelStyle = {
+  height:'1500px',
+  width:'1000px',
   position:'bottom-center', 
   stretch:'vertical',
-  height:'600px',
-  width:'600px',
   margin:'10px 10px'};
 
 var covcoeff_map = {};
@@ -913,7 +906,7 @@ var metric_dropdown = ui.Select({
   style:widgetStyle
 });
 
-main_panel.add(ui.Label({value:'View Metric', style:headerStyle}))
+main_panel.add(ui.Label({value:'View Metric Map', style:headerStyle}))
 main_panel.add(metric_dropdown);
 
 ///////////////////////////
@@ -950,7 +943,7 @@ var coeff_dropdown = ui.Select({
   style:widgetStyle
 });
 
-main_panel.add(ui.Label({value:'View Regression Coefficient', style:headerStyle}))
+main_panel.add(ui.Label({value:'View Regression Coefficient Map', style:headerStyle}))
 main_panel.add(coeff_dropdown);
 
 ///////////////////
@@ -1232,38 +1225,47 @@ var info_str = 'OVERVIEW: \n' +
               'treAGB: AGB of trees (lbs/acre). \n' +
               'LR: linear regression is a statistical model of the relationship between a dependend variable and one \n' + 
               'or more independent variables. \n' + 
+              'avg: Average value of RAP variable. \n' + 
+              'sdev: Standard deviation of RAP variable. \n' + 
+              'RMSE: root mean square error of climate regression model. \n' + 
+              'Rsqr: R-square. \n' + 
+              'RsqrA: Adjusted R-square. \n' + 
               '\n' + 
               'METHODOLOGY:  \n' +
-              'Predictive statisticical models based on LR were used to predict RAP variables based on year-to-year \n' + 
-              'datapoints from 1986-2014. Multiple linear regression (MLR) is used to predict annual RAP variables\n' + 
-              'from annually averaged PRISM variables. Seven PRISM predictor variables were used: \n' + 
-              'precipitation (pr), mean max/min temperature (tx, tn), mean temperature (tm), mean dewpoint temperature (td)
-              'and mean max/min vapor pressure deficit (vx, vm). \n' + 
+              'Models based on LR were fitted to predict individual RAP variables using the 39-year annual record \n' + 
+              '(1986-2024) given by RAP and annually averaged PRISM variables. \n' + 
+              'Seven PRISM predictor variables were used: precipitation (pr), mean max/min temperature (tx, tn), \n' + 
+              'mean temperature (tm), mean dewpoint temperature (td), and mean max/min vapor pressure deficit (vx, vm). \n' + 
+              'Similarly, trend analysis is done using simple LR. The slope coefficient of the trend analysis is \n' +
+              'a negative value if there is a downward trend, and positive if the trend is upwards. The magnitude \n' +
+              'determines the steepness of the trend. The metric maps allow the performance of the LR models to \n' +
+              'be judged. The Fconf and Tconf metric maps indicate whether the fitted LR models parameters are \n' +
+              'statistically meaningful and are expressed as a percent confidence. The Fconf maps are determined \n' +
+              'for the climate regression models and are based on the F-statistic, which indicates whether the overall \n' +
+              'LR model is statistically significant. The Tconf map is determined for the trend analysis LR model, \n' +
+              'and indicates whether the slope cofficient of the LR is statistically significant. \n' +
               '\n' + 
               'USAGE:  \n' +
               'Choosing any selection option will render a new map. For options that are not chosen, placeholder options \n' + 
-              'are used until a selection is made. \n' + 
-              'from annually averaged PRISM variables. Six PRISM predictor variables were used: precipitation, \n' + 
-              'mean max/min temperature, mean dewpoint temperature, and mean max/min vapor pressure deficit. \n' + 
-              'asdYAYAYAflkasdfljk \n' + 
-              'OKokOKOKOKOKOKOKOK \n' + 
+              'are used until a selection is made. Some maps will load slower, as all processing is done on-the-fly. \n' + 
+              'This application is meant to be supplimental to the features already available on the offical RAP website. \n' +
               '\n' + 
-              'Citations: \n' + 
-              'Beck, H. E., Zimmermann, N. E., McVicar, T. R., Vergopolan, N., Berg, A., & Wood, E. F. (2018). \n' + 
-              'Present and future Köppen-Geiger climate classification maps at 1-km resolution. Scientific data, 5(1), 1-12. \n' + 
-              '\n' + 
-              'Peel, M. C., Finlayson, B. L., & McMahon, T. A. (2007). \n' + 
-              'Updated world map of the Köppen-Geiger climate classification. \n' + 
-              'Hydrology and earth system sciences, 11(5), 1633-1644. \n' + 
-              '\n' + 
-              'Thrasher, B., Xiong, J., Wang, W., Melton, F., Michaelis, A., & Nemani, R. (2013). \n' + 
-              'Downscaled climate projections suitable for resource management. \n' + 
-              'Eos, Transactions American Geophysical Union, 94(37), 321-323. \n' + 
+              'Citations: \n' +
+              'Daly, C., Halbleib, M., Smith, J. I., Gibson, W. P., Doggett, M. K., Taylor, G. H., ... & \n' + 
+              'Pasteris, P. P. (2008). Physiographically sensitive mapping of climatological temperature and precipitation \n' +
+              'across the conterminous United States. International Journal of Climatology: a Journal of the \n' + 
+              'Royal Meteorological Society, 28(15), 2031-2064. \n' +
+              'Jones, M. O., Robinson, N. P., Naugle, D. E., Maestas, J. D., Reeves, M. C., Lankston, R. W., &  \n' +
+              'Allred, B. W. (2021). Annual and 16-day rangeland production estimates for the western United States. \n' +
+              'Rangeland Ecology & Management, 77, 112-117. \n' +
+              'Kleinhesselink, A. R., Kachergis, E. J., McCord, S. E., Shirley, J., Hupp, N. R., Walker, J., ... & \n' + 
+              'Naugle, D. E. (2023). Long-term trends in vegetation on Bureau of Land Management rangelands in the \n' + 
+              'western United States. Rangeland Ecology & Management, 87, 1-12. \n' + 
               '\n' + 
               'Additional Notes: \n' +
-              'Use of the updated NEX-DCP30 for CMIP6 will be considered for this app \n' + 
-              'if/when it becomes available on Google Earth Engine. For an in-depth description of each climate \n' + 
-              'type, see wikipedia.org/wiki/Köppen_climate_classification';
+              'The official Rangeland Assessment Platform website is found at https://rangelands.app \n' + 
+              'The codebase for this application can be found at www.github.com \n' + 
+              '';
 
 var text_box = ui.Label({value:info_str, style:infoLabelStyle});
 var text_panel = ui.Panel({widgets:null, layout:null, style:textPanelStyle});
@@ -1272,8 +1274,7 @@ function render_infobox(bool_obj){
   if (bool_obj === true){
     text_panel.add(text_box);
     Map.add(text_panel);
-  }
-  else{
+  }else{
     Map.remove(text_panel);
     text_panel.clear();
   }
