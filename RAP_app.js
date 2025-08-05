@@ -1,5 +1,3 @@
-//THINGS THAT DON'T WORK:
-//X-axis dates
 //Pixel value on click for metric layers
 //GitHub
 
@@ -1189,18 +1187,18 @@ main_panel.add(inspect_checkbox);
 
 var info_str = 'OVERVIEW: \n' +
               'This app is built using the Google Earth Engine cloud platform and publically available datasets. \n' +
-              'With a coverage area of the southwestern US, the the Rangeland Assessment Platform (RAP) ground cover \n' +
-              'dataset is visualized, and connections are identified between RAP and climate variables of the  \n' +
-              'PRISM dataset. The spatial resolution is at ~800 m to match the resolution of PRISM, such that RAP\n' +
-              'was spatially averaged to this resolution from its native resolution of 30 m. The sensitivity of RAP \n' +
-              'to climate is quantified based on the success of multiple linear regressions to predict individual RAP \n' +
-              'RAP variables using only climate predictors. Each ~800 m pixel is fitted with it\'s own independent \n' +
-              'regression model. Trend analysis of year-to-year RAP time series based on simple linear regression \n' +
-              'of time series can also be visualized for each pixel. \n' +
-              '\n' +  
+              'The Rangeland Assessment Platform (RAP) dataset of ground cover is visualized for the southwestern US,  \n' +
+              'and connections are identified between RAP and climate variables of the PRISM dataset. The spatial  \n' +
+              'resolution is at ~800 m to match the resolution of PRISM, such that RAP is spatially averaged from its \n' +
+              'native resolution of 30 m. The sensitivity of RAP to climate is quantified based on the success of \n' +
+              'multiple linear regressions that predict individual RAP variables using only climate predictors. \n' +
+              'Each ~800 m pixel is fitted with its own independent regression model. Trend analysis based on \n' +
+              'simple linear regression of RAP annual time series can also be visualized for each pixel. This application \n' +
+              'is meant to be supplemental to the features already available on the offical RAP website. \n' +
+              '\n' +
               'DEFINITIONS: \n' +
               'RAP: Rangeland Assessment Platform is a dataset with rangeland-specific vegetation growth and cover. \n' + 
-              'PRISM: A US gridded observation climate dataset. In this case, monthly ~800 m data is annually averaged. \n' +               
+              'PRISM: A US gridded observational climate dataset. In this case, monthly ~800 m data is annually averaged. \n' +               
               'Ground Cover: The fraction of surface area covered by plants or other cover forms when viewed from above. \n' +
               'NPP: Net primary production, units of pounds carbon per acre (lbs / acre). \n' + 
               'AGB: Above ground biomass, units of pounds biomass per acre (lbs / acre). \n' + 
@@ -1217,11 +1215,12 @@ var info_str = 'OVERVIEW: \n' +
               'pfgAGB: AGB of perennial forbs and grass estimated from NPP (lbs/acre). \n' +
               'LR: linear regression is a statistical model of the relationship between a dependend variable and one \n' + 
               'or more independent variables. \n' + 
-              'avg: Average value of RAP variable. \n' + 
-              'sdev: Standard deviation of RAP variable. \n' + 
-              'RMSE: root mean square error of climate regression model. \n' + 
-              'Rsqr: R-square. \n' + 
-              'RsqrA: Adjusted R-square. \n' + 
+              'avg: Average value of the selected RAP variable. \n' +
+              'sdev: Standard deviation of the selected RAP variable. Expressed as a percentage fraction of the avg. \n' + 
+              'RMSE: Root mean square error of the selected climate regression model. \n' + 
+              'Rsqr: R-square of the selected climate regression model. \n' + 
+              'RsqrA: Adjusted R-square of the selected climate regression model that penalizes the model for having \n' + 
+              'added parameters. \n' + 
               '\n' + 
               'METHODOLOGY:  \n' +
               'Models based on LR were fitted to predict individual RAP variables using the 39-year annual record \n' + 
@@ -1231,17 +1230,19 @@ var info_str = 'OVERVIEW: \n' +
               'Similarly, trend analysis is done using simple LR. The slope coefficient of the trend analysis is \n' +
               'a negative value if there is a downward trend, and positive if the trend is upwards. The magnitude \n' +
               'determines the steepness of the trend. The metric maps allow the performance of the LR models to \n' +
-              'be judged. The Fconf and Tconf metric maps indicate whether the fitted LR models parameters are \n' +
+              'be judged. The Fconf and Tconf metric maps indicate whether the fitted LR model parameters are \n' +
               'statistically meaningful and are expressed as a percent confidence. The Fconf maps are determined \n' +
               'for the climate regression models and are based on the F-statistic, which indicates whether the overall \n' +
               'LR model is statistically significant. The Tconf map is determined for the trend analysis LR model, \n' +
               'and indicates whether the slope cofficient of the LR is statistically significant. Estimated AGB \n' +
-              'uses the same methodology as the RAP website.  \n' +
+              'for grass and forbs uses the same methodology as the RAP website.  \n' +
               '\n' + 
               'USAGE:  \n' +
               'Choosing any selection option will render a new map. For options that are not chosen, placeholder options \n' + 
-              'are used until a selection is made. Some maps will load slower, as all processing is done on-the-fly. \n' + 
-              'This application is meant to be supplemental to the features already available on the offical RAP website. \n' +
+              'are used until a selection is made. If you are unsure of what options were used to generate the current map, \n' + 
+              'make another selection option to ensure the rendered map is as intended. Some maps will load slower because \n' +  
+              'all processing is done on-the-fly. Layer transparency can be adjustedusing the slider bar feature under the \n' + 
+              'layer list (top right). \n' + 
               '\n' + 
               'CITATIONS: \n' +
               'Daly, C., Halbleib, M., Smith, J. I., Gibson, W. P., Doggett, M. K., Taylor, G. H., ... & \n' + 
