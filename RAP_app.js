@@ -544,9 +544,9 @@ var pixelPanelStyle = {
   margin:'10px 10px'};
 
 var infoLabelStyle = {
-  height:'1500px',
+  height:'1200px',
   width:'1000px',
-  position:'top-center',
+  position:'bottom-center',
   whiteSpace:'preserve nowrap',
   padding:'1px',
   margin:'2px',
@@ -554,8 +554,8 @@ var infoLabelStyle = {
   fontSize:'12px'};
 
 var textPanelStyle = {
-  height:'1500px',
-  width:'1000px',
+  height:'500px',
+  width:'700px',
   position:'bottom-center', 
   stretch:'vertical',
   margin:'10px 10px'};
@@ -1219,10 +1219,10 @@ var info_str = 'OVERVIEW: \n' +
               'pfgNPP: NPP of perennial forbs and grass (lbs/acre). \n' +
               'shrNPP: NPP of shrubs (lbs/acre). \n' +               
               'treNPP: NPP of trees (lbs/acre). \n' +
-              'afgAGB: AGB of annual forbs and grass (lbs/acre). \n' + 
-              'pfgAGB: AGB of perennial forbs and grass (lbs/acre). \n' +
-              'shrAGB: AGB of shrubs (lbs/acre). \n' +               
-              'treAGB: AGB of trees (lbs/acre). \n' +
+              'afgAGB: AGB of annual forbs and grass estimated from NPP (lbs/acre). \n' + 
+              'pfgAGB: AGB of perennial forbs and grass estimated from NPP (lbs/acre). \n' +
+              'shrAGB: AGB of shrubs estimated from NPP (lbs/acre). \n' +               
+              'treAGB: AGB of trees estimated from NPP (lbs/acre). \n' +
               'LR: linear regression is a statistical model of the relationship between a dependend variable and one \n' + 
               'or more independent variables. \n' + 
               'avg: Average value of RAP variable. \n' + 
@@ -1243,14 +1243,15 @@ var info_str = 'OVERVIEW: \n' +
               'statistically meaningful and are expressed as a percent confidence. The Fconf maps are determined \n' +
               'for the climate regression models and are based on the F-statistic, which indicates whether the overall \n' +
               'LR model is statistically significant. The Tconf map is determined for the trend analysis LR model, \n' +
-              'and indicates whether the slope cofficient of the LR is statistically significant. \n' +
+              'and indicates whether the slope cofficient of the LR is statistically significant. The estimated AGB \n' +
+              'uses the same methodology as the RAP website and the  \n' +
               '\n' + 
               'USAGE:  \n' +
               'Choosing any selection option will render a new map. For options that are not chosen, placeholder options \n' + 
               'are used until a selection is made. Some maps will load slower, as all processing is done on-the-fly. \n' + 
               'This application is meant to be supplimental to the features already available on the offical RAP website. \n' +
               '\n' + 
-              'Citations: \n' +
+              'CITATIONS: \n' +
               'Daly, C., Halbleib, M., Smith, J. I., Gibson, W. P., Doggett, M. K., Taylor, G. H., ... & \n' + 
               'Pasteris, P. P. (2008). Physiographically sensitive mapping of climatological temperature and precipitation \n' +
               'across the conterminous United States. International Journal of Climatology: a Journal of the \n' + 
@@ -1262,7 +1263,7 @@ var info_str = 'OVERVIEW: \n' +
               'Naugle, D. E. (2023). Long-term trends in vegetation on Bureau of Land Management rangelands in the \n' + 
               'western United States. Rangeland Ecology & Management, 87, 1-12. \n' + 
               '\n' + 
-              'Additional Notes: \n' +
+              'ADDITIONAL NOTES: \n' +
               'The official Rangeland Assessment Platform website is found at https://rangelands.app \n' + 
               'The codebase for this application can be found at www.github.com \n' + 
               '';
