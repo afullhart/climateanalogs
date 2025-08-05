@@ -748,6 +748,7 @@ var model_dropdown = ui.Select({
   style:widgetStyle
 });
 
+main_panel.add(ui.Label({value:'RAP Climate Sensitivity Viewer', style:{padding:'0px 0px', fontWeight:'bold'}}))
 main_panel.add(ui.Label({value:'Select Climate Regression Model', style:headerStyle}))
 main_panel.add(model_dropdown);
 
