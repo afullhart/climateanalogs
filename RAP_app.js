@@ -22,7 +22,7 @@ var dates_list = ee.List(years_list.map(make_date_fn));
 var years_str_list = ['1986', '1987', '1988', '1989', '1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'];
 var cover_bands = ['AFG', 'BGR', 'LTR', 'PFG', 'SHR', 'TRE'];
 var prod_bands = ['afgNPP', 'pfgNPP', 'shrNPP', 'treNPP'];
-var bio_bands = ['afgAGB', 'pfgAGB', 'shrAGB', 'treAGB'];
+var bio_bands = ['afgAGB', 'pfgAGB'];
 var cover_ic = ee.ImageCollection('projects/rap-data-365417/assets/vegetation-cover-v3');
 var prod_ic = ee.ImageCollection('projects/rap-data-365417/assets/npp-partitioned-v3');
 var mat_ic = ee.ImageCollection('projects/rap-data-365417/assets/gridmet-MAT');
@@ -84,21 +84,16 @@ var prod_ic_list = prod_ic.toList(999);
 function npp2biomass_fn(yr_idx){
   var mat_im = ee.Image(mat_ic_list.get(yr_idx));
   var rap_im = ee.Image(prod_ic_list.get(yr_idx));
+  var rap_im = rap_im.select(['afgNPP', 'pfgNPP']);
   var year = ee.Date(rap_im.get('system:time_start')).format('YYYY');
   var fANPP_im = mat_im.multiply(0.0129).add(0.171); //Above-ground NPP fraction;
-  var fANPP_tre = ee.Number(0.5); //Above-ground NPP fraction;
   var agb_im = rap_im.multiply(0.0001) // NPP scalar 
     .multiply(2.20462) // KgC to lbsC
     .multiply(4046.86) // m2 to acres
-    .multiply(2.1276) // C to biomass
-    .copyProperties(rap_im, ['system:time_start']).set('year', year);
-  var agb_im = ee.Image(agb_im).rename('afgAGB', 'pfgAGB', 'shrAGB', 'treAGB');
-  var grd_im = agb_im.select(['afgAGB', 'pfgAGB', 'shrAGB']);
-  var grd_im = grd_im.multiply(fANPP_im);
-  var tre_im = agb_im.select(['treAGB']);
-  var tre_im = tre_im.multiply(fANPP_tre);
-  var im = grd_im.addBands(tre_im);
-  var im = ee.Image(im.copyProperties(agb_im, agb_im.propertyNames()));
+    .multiply(2.1276); // C to biomass
+  var agb_im = ee.Image(agb_im).rename(['afgAGB', 'pfgAGB']);
+  var agb_im = agb_im.multiply(fANPP_im);
+  var im = ee.Image(agb_im.copyProperties(rap_im, rap_im.propertyNames()));
   var im = im.setDefaultProjection('EPSG:4326', transform_new);
   var im = im.reproject({crs:proj.crs(), crsTransform:transform_new});
   return im;
