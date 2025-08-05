@@ -1241,7 +1241,7 @@ var info_str = 'OVERVIEW: \n' +
               'USAGE:  \n' +
               'Choosing any selection option will render a new map. For options that are not chosen, placeholder options \n' + 
               'are used until a selection is made. Some maps will load slower, as all processing is done on-the-fly. \n' + 
-              'This application is meant to be supplimental to the features already available on the offical RAP website. \n' +
+              'This application is meant to be supplemental to the features already available on the offical RAP website. \n' +
               '\n' + 
               'CITATIONS: \n' +
               'Daly, C., Halbleib, M., Smith, J. I., Gibson, W. P., Doggett, M. K., Taylor, G. H., ... & \n' + 
@@ -1257,8 +1257,7 @@ var info_str = 'OVERVIEW: \n' +
               '\n' + 
               'ADDITIONAL NOTES: \n' +
               'The official Rangeland Assessment Platform website is found at https://rangelands.app \n' + 
-              'The codebase for this application can be found at www.github.com \n' + 
-              '';
+              'The codebase for this application can be found at www.github.com';
 
 var text_box = ui.Label({value:info_str, style:infoLabelStyle});
 var text_panel = ui.Panel({widgets:null, layout:null, style:textPanelStyle});
