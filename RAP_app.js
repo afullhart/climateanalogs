@@ -1237,6 +1237,7 @@ var info_str = 'OVERVIEW: \n' +
               'Selecting the Fconf metric shows the p-value expressed as a confidence percentage. \n' +
               'T-statistic: A metric used to calculate the p-value for the slope coefficient of simple LR trends for \n' +
               'annual RAP time series. Selecting the Tconf metric shows the p-value expressed as a confidence percentage. \n' +
+              'In this case, the confidence represents the likelihood that the slope is non-zero (two-tailed). \n' +
               '\n' + 
               'METHODOLOGY: \n' +
               'Models based on LR are fitted to predict individual RAP variables using the 39-year annual record \n' + 
