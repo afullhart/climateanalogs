@@ -1,6 +1,7 @@
 //Pixel value on click for metric layers
 //GitHub
 //less than equal to used for wrong units
+//critical T-values
 
 var prism_ic = ee.ImageCollection('projects/sat-io/open-datasets/OREGONSTATE/PRISM_800_MONTHLY');
 var first_im = prism_ic.first().select('ppt');
@@ -304,6 +305,13 @@ function main_fn(band, rap_ic, out_im_type){
   var coef_im = coef_im.setDefaultProjection('EPSG:4326', transform_new);
   var coef_im = coef_im.reproject({crs:proj.crs(), crsTransform:transform_new});
   var t_im = coef_im.select('c2').divide(sslp_im);
+  var zer_im = rmse_im.lt(0.0);
+  var ninenin_im = zer_im.where(t_im.gte(2.712), 1);
+  var ninefiv_im = zer_im.where(t_im.gte(2.024), 1);
+  var ninezer_im = zer_im.where(t_im.gte(1.686), 1);
+  var con_im = zer_im.add(ninenin_im).add(ninefiv_im).add(ninezer_im);
+  var con_im = con_im.setDefaultProjection('EPSG:4326', transform_new);
+  var con_im = con_im.reproject({crs:proj.crs(), crsTransform:transform_new});
 
   if (out_im_type == 'avg'){
     var avg_im = rap_ic.reduce(ee.Reducer.mean());
@@ -1067,7 +1075,7 @@ function renderOnetoOne(checkbox_bool){
 }
 
 var OnetoOne_checkbox = ui.Checkbox({
-  label:'One-to-One Plot on Click',
+  label:'Pred. vs. True Plot on Click',
   onChange:renderOnetoOne,
   style:checkStyle
 });
@@ -1142,7 +1150,10 @@ main_panel.add(trend_checkbox);
 function makePlotC(point_geo){
   var point_fc = im_to_show.sample(point_geo, scale, proj);
   var prop_ft = point_fc.first();
+  print(prop_ft);
   var prop_names = prop_ft.propertyNames();
+  var sys_index_idx = prop_names.getInfo().indexOf('system:index');
+  print(sys_index_idx);
   var prop_val = prop_ft.get(prop_names.get(0));
   var pixel_label = ui.Label({
     value:'Pixel Value:'.concat('\n').concat(prop_val.getInfo()),
