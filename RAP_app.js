@@ -1,5 +1,6 @@
-//GitHub
-//critical T-values
+//GitHub.
+//critical T-values.
+//Plot size issues.
 
 var prism_ic = ee.ImageCollection('projects/sat-io/open-datasets/OREGONSTATE/PRISM_800_MONTHLY');
 var first_im = prism_ic.first().select('ppt');
