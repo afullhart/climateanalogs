@@ -1199,7 +1199,7 @@ main_panel.add(inspect_checkbox);
 var info_str = 'OVERVIEW: \n' +
               'This app is built using the Google Earth Engine cloud platform and publically available datasets. \n' +
               'The Rangeland Assessment Platform (RAP) dataset of ground cover is visualized for a southwestern US  \n' +
-              'coverage area and connections are identified between RAP and climate variables of the PRISM dataset. \n' +
+              'coverage area, and connections are identified between RAP and climate variables of the PRISM dataset. \n' +
               'Maps are generated at the ~800 m resolution of PRISM, such that RAP is spatially averaged from its \n' +
               'original resolution of 30 m. The sensitivity of RAP to climate is quantified based on the success of \n' +
               'multiple linear regressions that predict individual RAP variables using only climate predictors. \n' +
@@ -1263,7 +1263,7 @@ var info_str = 'OVERVIEW: \n' +
               'adjusted using the slider bar feature in the layer list (top-right). Rendered graphs can be expanded \n' + 
               'to a larger size by clicking the icon in the top-right corner of the graph. This opens an interactive \n' + 
               'version of the graph in a separate browser tab. Trends in RAP can be visualized by viewing coefficient  \n' + 
-              'maps of Atrend and Ktrend, the slope and intercept, respectively, of the LR trend of annual RAP time series.  \n' + 
+              'maps of Atrend and Ktrend (the slope and intercept, respectively) of the LR trend of annual RAP time series.  \n' + 
               '\n' + 
               'CITATIONS: \n' +
               'Daly, C., Halbleib, M., Smith, J. I., Gibson, W. P., Doggett, M. K., Taylor, G. H., ... & \n' + 
