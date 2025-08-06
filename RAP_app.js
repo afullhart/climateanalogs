@@ -1,6 +1,4 @@
-//Pixel value on click for metric layers
 //GitHub
-//less than equal to used for wrong units
 //critical T-values
 
 var prism_ic = ee.ImageCollection('projects/sat-io/open-datasets/OREGONSTATE/PRISM_800_MONTHLY');
