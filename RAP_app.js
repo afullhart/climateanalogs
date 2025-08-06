@@ -1,5 +1,6 @@
 //Pixel value on click for metric layers
 //GitHub
+//less than equal to used for wrong units
 
 var prism_ic = ee.ImageCollection('projects/sat-io/open-datasets/OREGONSTATE/PRISM_800_MONTHLY');
 var first_im = prism_ic.first().select('ppt');
@@ -1026,7 +1027,7 @@ function makePlotA(plot_ic, point_geo){
   var oneone_chart = ui.Chart.array.values(pred_list, 0, rap_list)
   .setSeriesNames(['PredVsRap'])
   .setOptions({
-    title:'One-to-One',
+    title:'Pred. vs. True',
     titleTextStyle:{italic:false, bold:true, fontSize:26},
     legend:{position:'top-right'},
     hAxis:{viewWindow:{min:min_value*0.9, max:max_value*1.1}, title:'RAP', titleTextStyle:{italic:false, bold:true, fontSize:21}, gridlines:{count:6}},
@@ -1223,43 +1224,48 @@ var info_str = 'OVERVIEW: \n' +
               'RsqrA: Adjusted R-square of the selected climate regression model that penalizes the model for having \n' + 
               'added parameters. \n' + 
               '\n' + 
-              'METHODOLOGY:  \n' +
+              'METHODOLOGY: \n' +
               'Models based on LR were fitted to predict individual RAP variables using the 39-year annual record \n' + 
               '(1986-2024) given by RAP and annually averaged PRISM variables. \n' + 
               'Seven PRISM predictor variables were used: precipitation (pr), mean max/min temperature (tx, tn), \n' + 
               'mean temperature (tm), mean dewpoint temperature (td), and mean max/min vapor pressure deficit (vx, vm). \n' + 
               'Similarly, trend analysis is done using simple LR. The slope coefficient of the trend analysis is \n' +
               'a negative value if there is a downward trend, and positive if the trend is upwards. The magnitude \n' +
-              'determines the steepness of the trend. The metric maps allow the performance of the LR models to \n' +
-              'be judged. The Fconf and Tconf metric maps indicate whether the fitted LR model parameters are \n' +
-              'statistically meaningful and are expressed as a percent confidence. The Fconf maps are determined \n' +
-              'for the climate regression models and are based on the F-statistic, which indicates whether the overall \n' +
-              'LR model is statistically significant. The Tconf map is determined for the trend analysis LR model, \n' +
+              'determines the steepness of the trend. The selectable metric maps allow the performance of the LR models \n' +
+              'to be judged. The Fconf and Tconf metric maps indicate whether the fitted LR model parameters are \n' +
+              'statistically meaningful and are expressed as a percent confidence. The Fconf maps are generated for \n' +
+              'the climate regression models and are based on the F-statistic, which indicates whether the overall \n' +
+              'LR model is statistically significant. The Tconf map is determined for the trend analysis LR model \n' +
               'and indicates whether the slope cofficient of the LR is statistically significant. Estimated AGB \n' +
-              'for grass and forbs uses the same methodology as the RAP website.  \n' +
+              'for grass and forbs uses the same methodology as the RAP website. \n' +
               '\n' + 
-              'USAGE:  \n' +
+              'USAGE: \n' +
               'Choosing any selection option will render a new map. For options that are not chosen, placeholder options \n' + 
-              'are used until a selection is made. If you are unsure of what options were used to generate the current map, \n' + 
-              'make another selection option to ensure the rendered map is as intended. Some maps will load slower because \n' +  
-              'all processing is done on-the-fly. Layer transparency can be adjustedusing the slider bar feature under the \n' + 
-              'layer list (top right). \n' + 
+              'are used until a selection is made. Rendered maps of metrics, coeffiecents, rap years, and predicted \n' + 
+              'rap years depend on the selection of climate regression model and/or RAP variable. If you are unsure \n' + 
+              'of what options were used to generate the current map, render a new map with the intended selections. \n' + 
+              'Some maps will load slower because all processing is done on-the-fly. Layer transparency can be \n' + 
+              'adjusted using the slider bar feature in the layer list (top-right). Rendered graphs can be expanded \n' + 
+              'to a larger size by clicking the icon in the top-right corner of the graph. This opens an interactive \n' + 
+              'version of the graph in a separate browser tab. \n' + 
               '\n' + 
               'CITATIONS: \n' +
               'Daly, C., Halbleib, M., Smith, J. I., Gibson, W. P., Doggett, M. K., Taylor, G. H., ... & \n' + 
               'Pasteris, P. P. (2008). Physiographically sensitive mapping of climatological temperature and precipitation \n' +
               'across the conterminous United States. International Journal of Climatology: a Journal of the \n' + 
               'Royal Meteorological Society, 28(15), 2031-2064. \n' +
+              '\n' + 
               'Jones, M. O., Robinson, N. P., Naugle, D. E., Maestas, J. D., Reeves, M. C., Lankston, R. W., &  \n' +
               'Allred, B. W. (2021). Annual and 16-day rangeland production estimates for the western United States. \n' +
               'Rangeland Ecology & Management, 77, 112-117. \n' +
+              '\n' + 
               'Kleinhesselink, A. R., Kachergis, E. J., McCord, S. E., Shirley, J., Hupp, N. R., Walker, J., ... & \n' + 
               'Naugle, D. E. (2023). Long-term trends in vegetation on Bureau of Land Management rangelands in the \n' + 
               'western United States. Rangeland Ecology & Management, 87, 1-12. \n' + 
               '\n' + 
               'ADDITIONAL NOTES: \n' +
               'The official Rangeland Assessment Platform website is found at https://rangelands.app \n' + 
-              'The codebase for this application can be found at www.github.com';
+              'The code for this application can be found at www.github.com';
 
 var text_box = ui.Label({value:info_str, style:infoLabelStyle});
 var text_panel = ui.Panel({widgets:null, layout:null, style:textPanelStyle});
