@@ -614,6 +614,8 @@ biocoeff_map[coeff_list[13]] = {min:-1000, max:1000};
 /////////////////////////////////////////
 //Global Widget Vars and Initial Display
 
+Map.setCenter(37, -109, 5);
+
 var palettes = require('users/gena/packages:palettes');
 var im_to_show = main_fn(band_selection, ic_selection, type_selection);
 var bandVis = covVis;
@@ -623,6 +625,8 @@ var main_panel = ui.Panel({
   layout:ui.Panel.Layout.flow('vertical'),
   style:mainPanelStyle
 });
+
+main_panel.add(ui.Label({value:'RAP Climate Sensitivity Viewer', style:{padding:'0px 0px', fontWeight:'bold'}}));
 
 var legend_panel = ui.Panel({
   style:{position:'bottom-left', padding:'8px 15px'}
@@ -687,11 +691,17 @@ function makeLegend(){
     style:{position:'bottom-center', stretch:'vertical', margin:'0px 8px', maxHeight:'200px'}
   });
   
-  if (['cov', 'pro', 'agb', 'rms'].indexOf(type_selection.slice(0, 3)) < 0){
+  if (['cov', 'pro', 'agb', 'rms', 'avg', 'sde'].indexOf(type_selection.slice(0, 3)) < 0){
+    print('concat min string');
+    print(type_selection);
+    print(type_selection.slice(0, 3));
     var panel2 = ui.Panel({
       widgets:[ui.Label('<= '.concat(String(bandVis['min'])))]
     });
   }else{
+    print('zero min string');
+    print(type_selection);
+    print(type_selection.slice(0, 3));
     var panel2 = ui.Panel({
       widgets:[ui.Label(String(bandVis['min']))]
     });
@@ -757,7 +767,6 @@ var model_dropdown = ui.Select({
   style:widgetStyle
 });
 
-main_panel.add(ui.Label({value:'RAP Climate Sensitivity Viewer', style:{padding:'0px 0px', fontWeight:'bold'}}))
 main_panel.add(ui.Label({value:'Select Climate Regression Model', style:headerStyle}))
 main_panel.add(model_dropdown);
 
@@ -944,7 +953,7 @@ var coeff_dropdown = ui.Select({
   style:widgetStyle
 });
 
-main_panel.add(ui.Label({value:'View Regression Coefficient Map', style:headerStyle}))
+main_panel.add(ui.Label({value:'View Regression Coefficient Map', style:headerStyle}));
 main_panel.add(coeff_dropdown);
 
 ///////////////////
@@ -1150,11 +1159,10 @@ main_panel.add(trend_checkbox);
 function makePlotC(point_geo){
   var point_fc = im_to_show.sample(point_geo, scale, proj);
   var prop_ft = point_fc.first();
-  print(prop_ft);
   var prop_names = prop_ft.propertyNames();
   var sys_index_idx = prop_names.getInfo().indexOf('system:index');
-  print(sys_index_idx);
-  var prop_val = prop_ft.get(prop_names.get(0));
+  var prop_idx = 1 - sys_index_idx;
+  var prop_val = prop_ft.get(prop_names.get(prop_idx));
   var pixel_label = ui.Label({
     value:'Pixel Value:'.concat('\n').concat(prop_val.getInfo()),
     style:pixelLabelStyle
