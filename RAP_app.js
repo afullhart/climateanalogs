@@ -1,6 +1,3 @@
-//GitHub.
-//critical T-values.
-//Plot size issues.
 
 var prism_ic = ee.ImageCollection('projects/sat-io/open-datasets/OREGONSTATE/PRISM_800_MONTHLY');
 var first_im = prism_ic.first().select('ppt');
@@ -48,9 +45,9 @@ var n = years_list.size();
 //for T-statistic look-up
 //df = n - 1 = 39 - 1 = 38
 //MODEL ZERO
-//1% = 2.712
-//5% = 2.024
-//10% = 1.686
+//1% = 2.715
+//5% = 2.026
+//10% = 1.687
 
 var first_im = cover_ic.first();
 var proj = first_im.projection().getInfo();
@@ -305,9 +302,9 @@ function main_fn(band, rap_ic, out_im_type){
   var coef_im = coef_im.reproject({crs:proj.crs(), crsTransform:transform_new});
   var t_im = coef_im.select('c2').divide(sslp_im);
   var zer_im = rmse_im.lt(0.0);
-  var ninenin_im = zer_im.where(t_im.gte(2.712), 1);
-  var ninefiv_im = zer_im.where(t_im.gte(2.024), 1);
-  var ninezer_im = zer_im.where(t_im.gte(1.686), 1);
+  var ninenin_im = zer_im.where(t_im.gte(2.715), 1);
+  var ninefiv_im = zer_im.where(t_im.gte(2.026), 1);
+  var ninezer_im = zer_im.where(t_im.gte(1.687), 1);
   var con_im = zer_im.add(ninenin_im).add(ninefiv_im).add(ninezer_im);
   var con_im = con_im.setDefaultProjection('EPSG:4326', transform_new);
   var con_im = con_im.reproject({crs:proj.crs(), crsTransform:transform_new});
@@ -380,14 +377,14 @@ function main_fn(band, rap_ic, out_im_type){
     return rap_ic;
   }else if (out_im_type == 'Debug'){
     print('DEBUG OUTPUT');
-    return f_im;
+    return t_im;
   }
 }
 
 ////////////////////////////////////////////////////
 //START DeBugGing TEsTING deBUggiNg tESTiNG TEsTiNG
-//var f_im = main_fn('PFG', cover_ic, 'Debug');
-//Map.addLayer(f_im, {min:0, max:2})
+//var t_im = main_fn('PFG', cover_ic, 'Debug');
+//Map.addLayer(t_im, {min:0, max:2})
 
 // var regr_props = regr_ic.getRegion(geometry, scale);
 // print(regr_props);
@@ -1045,7 +1042,7 @@ function makePlotA(plot_ic, point_geo){
     colors:['#6a9f58'],
     pointSize:12,
     lineSize:0,
-    chartArea:{height:500, width:500},
+    chartArea:{height:400, width:400},
     trendlines:{0:{type:'linear', color:'green', lineWidth:3, opacity:0.3, visibleInLegend:true}}
   });
   return oneone_chart;
@@ -1107,7 +1104,7 @@ function makePlotB(rap_ic, point_geo){
     colors:['#6a9f58'],
     pointSize:12,
     lineSize:0,
-    chartArea:{height:500, width:500},
+    chartArea:{height:400, width:400},
     trendlines:{0:{type:'linear', color:'green', lineWidth:3, opacity:0.3, visibleInLegend:true}}
   });
   return trend_chart;
@@ -1285,7 +1282,7 @@ var info_str = 'OVERVIEW: \n' +
               'The official Rangeland Assessment Platform website is found at https://rangelands.app \n' + 
               'The PRISM dataset used is available from https://support.climateengine.org/article/80-prism \n' +
               'The code for this application can be found at www.github.com'
-              'This app is coded by research scientist, Andrew Fullhart (U of Arizona SNRE, USDA-ARS-SWRC)';
+              'This app is coded by Andrew Fullhart and Gerardo Armendariz (U of Arizona SNRE, USDA-ARS-SWRC).';
 
 var text_box = ui.Label({value:info_str, style:infoLabelStyle});
 var text_panel = ui.Panel({widgets:null, layout:null, style:textPanelStyle});
