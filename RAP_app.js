@@ -690,16 +690,10 @@ function makeLegend(){
   });
   
   if (['cov', 'pro', 'agb', 'rms', 'avg', 'sde'].indexOf(type_selection.slice(0, 3)) < 0){
-    print('concat min string');
-    print(type_selection);
-    print(type_selection.slice(0, 3));
     var panel2 = ui.Panel({
       widgets:[ui.Label('<= '.concat(String(bandVis['min'])))]
     });
   }else{
-    print('zero min string');
-    print(type_selection);
-    print(type_selection.slice(0, 3));
     var panel2 = ui.Panel({
       widgets:[ui.Label(String(bandVis['min']))]
     });
@@ -1206,14 +1200,15 @@ main_panel.add(inspect_checkbox);
 
 var info_str = 'OVERVIEW: \n' +
               'This app is built using the Google Earth Engine cloud platform and publically available datasets. \n' +
-              'The Rangeland Assessment Platform (RAP) dataset of ground cover is visualized for the southwestern US,  \n' +
-              'and connections are identified between RAP and climate variables of the PRISM dataset. The spatial  \n' +
-              'resolution is at ~800 m to match the resolution of PRISM, such that RAP is spatially averaged from its \n' +
-              'native resolution of 30 m. The sensitivity of RAP to climate is quantified based on the success of \n' +
+              'The Rangeland Assessment Platform (RAP) dataset of ground cover is visualized for a southwestern US  \n' +
+              'coverage area and connections are identified between RAP and climate variables of the PRISM dataset. \n' +
+              'Maps are generated at the ~800 m resolution of PRISM, such that RAP is spatially averaged from its \n' +
+              'original resolution of 30 m. The sensitivity of RAP to climate is quantified based on the success of \n' +
               'multiple linear regressions that predict individual RAP variables using only climate predictors. \n' +
-              'Each ~800 m pixel is fitted with its own independent regression model. Trend analysis based on \n' +
-              'simple linear regression of RAP annual time series can also be visualized for each pixel. This application \n' +
-              'is meant to be supplemental to the features already available on the offical RAP website. \n' +
+              'Each pixel is fitted with its own independent regression model. Trend analysis based on simple linear \n' +
+              'regression of RAP annual time series can also be visualized for each pixel. This application is meant \n' +
+              'to supplement features available on the offical RAP website and to additionally explore climate \n' +
+              'sensitivity on rangeland in the southwestern US. \n' +
               '\n' +
               'DEFINITIONS: \n' +
               'RAP: Rangeland Assessment Platform is a dataset with rangeland-specific vegetation growth and cover. \n' + 
@@ -1242,10 +1237,10 @@ var info_str = 'OVERVIEW: \n' +
               'added parameters. \n' + 
               '\n' + 
               'METHODOLOGY: \n' +
-              'Models based on LR were fitted to predict individual RAP variables using the 39-year annual record \n' + 
-              '(1986-2024) given by RAP and annually averaged PRISM variables. \n' + 
+              'Models based on LR are fitted to predict individual RAP variables using the 39-year annual record \n' + 
+              'given by RAP (1986-2024) and annually averaged PRISM variables for the same time period. \n' + 
               'Seven PRISM predictor variables were used: precipitation (pr), mean max/min temperature (tx, tn), \n' + 
-              'mean temperature (tm), mean dewpoint temperature (td), and mean max/min vapor pressure deficit (vx, vm). \n' + 
+              'mean temperature (tm), mean dewpoint temperature (td), and mean max/min vapor pressure deficit (vx, vn). \n' + 
               'Similarly, trend analysis is done using simple LR. The slope coefficient of the trend analysis is \n' +
               'a negative value if there is a downward trend, and positive if the trend is upwards. The magnitude \n' +
               'determines the steepness of the trend. The selectable metric maps allow the performance of the LR models \n' +
@@ -1282,6 +1277,7 @@ var info_str = 'OVERVIEW: \n' +
               '\n' + 
               'ADDITIONAL NOTES: \n' +
               'The official Rangeland Assessment Platform website is found at https://rangelands.app \n' + 
+              'The PRISM dataset used is available from https://support.climateengine.org/article/80-prism \n' +
               'The code for this application can be found at www.github.com';
 
 var text_box = ui.Label({value:info_str, style:infoLabelStyle});
