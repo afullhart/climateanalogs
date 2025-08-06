@@ -1225,7 +1225,7 @@ var info_str = 'OVERVIEW: \n' +
               'treNPP: NPP of trees (lbs/acre). \n' +
               'afgAGB: AGB of annual forbs and grass estimated from NPP (lbs/acre). \n' + 
               'pfgAGB: AGB of perennial forbs and grass estimated from NPP (lbs/acre). \n' +
-              'LR: linear regression is a statistical model of the relationship between a dependend variable and one \n' + 
+              'LR: linear regression is a statistical model of the relationship between a dependent variable and one \n' + 
               'or more independent variables. \n' + 
               'avg: Average value of the selected RAP variable. \n' +
               'sdev: Standard deviation of the selected RAP variable. Expressed as a percentage fraction of the avg. \n' + 
@@ -1283,7 +1283,7 @@ var info_str = 'OVERVIEW: \n' +
               'The official Rangeland Assessment Platform website is found at https://rangelands.app \n' + 
               'The PRISM dataset used is available from https://support.climateengine.org/article/80-prism \n' +
               'The code for this application can be found at www.github.com'
-              'This app is coded by Andrew Fullhart and Gerardo Armendariz (U of Arizona SNRE, USDA-ARS-SWRC).';
+              'This app is developed by Andrew Fullhart and Gerardo Armendariz (U of Arizona SNRE, USDA-ARS-SWRC).';
 
 var text_box = ui.Label({value:info_str, style:infoLabelStyle});
 var text_panel = ui.Panel({widgets:null, layout:null, style:textPanelStyle});
