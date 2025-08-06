@@ -542,7 +542,7 @@ var pixelPanelStyle = {
   margin:'10px 10px'};
 
 var infoLabelStyle = {
-  height:'1200px',
+  height:'1400px',
   width:'1000px',
   position:'bottom-center',
   whiteSpace:'preserve nowrap',
@@ -1235,6 +1235,10 @@ var info_str = 'OVERVIEW: \n' +
               'Rsqr: R-square of the selected climate regression model. \n' + 
               'RsqrA: Adjusted R-square of the selected climate regression model that penalizes the model for having \n' + 
               'added parameters. \n' + 
+              'F-statistic: A metric used to calculate the p-value for overall significance of climate LR models. \n' +
+              'Selecting the Fconf metric shows the p-value expressed as a confidence percentage. \n' +
+              'T-statistic: A metric used to calculate the p-value for the slope coefficient of simple LR trends for \n' +
+              'annual RAP time series. Selecting the Tconf metric shows the p-value expressed as a confidence percentage. \n' +
               '\n' + 
               'METHODOLOGY: \n' +
               'Models based on LR are fitted to predict individual RAP variables using the 39-year annual record \n' + 
@@ -1242,7 +1246,7 @@ var info_str = 'OVERVIEW: \n' +
               'Seven PRISM predictor variables were used: precipitation (pr), mean max/min temperature (tx, tn), \n' + 
               'mean temperature (tm), mean dewpoint temperature (td), and mean max/min vapor pressure deficit (vx, vn). \n' + 
               'Similarly, trend analysis is done using simple LR. The slope coefficient of the trend analysis is \n' +
-              'a negative value if there is a downward trend, and positive if the trend is upwards. The magnitude \n' +
+              'a negative value when there is a downward trend, and positive if the trend is upwards. The magnitude \n' +
               'determines the steepness of the trend. The selectable metric maps allow the performance of the LR models \n' +
               'to be judged. The Fconf and Tconf metric maps indicate whether the fitted LR model parameters are \n' +
               'statistically meaningful and are expressed as a percent confidence. The Fconf maps are generated for \n' +
@@ -1253,13 +1257,14 @@ var info_str = 'OVERVIEW: \n' +
               '\n' + 
               'USAGE: \n' +
               'Choosing any selection option will render a new map. For options that are not chosen, placeholder options \n' + 
-              'are used until a selection is made. Rendered maps of metrics, coeffiecents, rap years, and predicted \n' + 
-              'rap years depend on the selection of climate regression model and/or RAP variable. If you are unsure \n' + 
+              'are used until a selection is made. Rendered maps of metrics, coeffiecents, RAP years, and predicted \n' + 
+              'RAP years depend on the selection of climate regression model and/or RAP variable. If you are unsure \n' + 
               'of what options were used to generate the current map, render a new map with the intended selections. \n' + 
               'Some maps will load slower because all processing is done on-the-fly. Layer transparency can be \n' + 
               'adjusted using the slider bar feature in the layer list (top-right). Rendered graphs can be expanded \n' + 
               'to a larger size by clicking the icon in the top-right corner of the graph. This opens an interactive \n' + 
-              'version of the graph in a separate browser tab. \n' + 
+              'version of the graph in a separate browser tab. Trends in RAP can be visualized by viewing coefficient  \n' + 
+              'maps of Atrend and Ktrend, the slope and intercept, respectively, of the LR trend of annual RAP time series.  \n' + 
               '\n' + 
               'CITATIONS: \n' +
               'Daly, C., Halbleib, M., Smith, J. I., Gibson, W. P., Doggett, M. K., Taylor, G. H., ... & \n' + 
@@ -1278,7 +1283,8 @@ var info_str = 'OVERVIEW: \n' +
               'ADDITIONAL NOTES: \n' +
               'The official Rangeland Assessment Platform website is found at https://rangelands.app \n' + 
               'The PRISM dataset used is available from https://support.climateengine.org/article/80-prism \n' +
-              'The code for this application can be found at www.github.com';
+              'The code for this application can be found at www.github.com'
+              'This app is coded by research scientist, Andrew Fullhart (U of Arizona SNRE, USDA-ARS-SWRC)';
 
 var text_box = ui.Label({value:info_str, style:infoLabelStyle});
 var text_panel = ui.Panel({widgets:null, layout:null, style:textPanelStyle});
