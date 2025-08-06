@@ -614,7 +614,7 @@ biocoeff_map[coeff_list[13]] = {min:-1000, max:1000};
 /////////////////////////////////////////
 //Global Widget Vars and Initial Display
 
-Map.setCenter(37, -109, 5);
+Map.setCenter(-109, 37, 5);
 
 var palettes = require('users/gena/packages:palettes');
 var im_to_show = main_fn(band_selection, ic_selection, type_selection);
