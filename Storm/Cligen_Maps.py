@@ -1,6 +1,5 @@
-#GOTCHA:
-#Check that the CLIGEN directory is empty except for the executable before running.
-#The code doesn't overwrite par files with the same name.
+#Before running:
+#Check that the CLIGEN directory is empty except for the executable
 
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -18,9 +17,9 @@ import numpy as np
 from datetime import datetime
 
 cliDIR = '/home/afullhart/Downloads/cligen_53004_Linux'
-parentparDIR = '/home/afullhart/Downloads/GDBs/RCP45/pars'
+parentparDIR = '/home/afullhart/Downloads/GDBs/RCP85/pars'
 ptFILE = '/home/afullhart/Downloads/Points.csv'
-outDIR = '/home/afullhart/Downloads/GDBs/RCP45/maps'
+outDIR = '/home/afullhart/Downloads/GDBs/RCP85/maps'
 
 
 parFolders = [os.path.join(parentparDIR, d) for d in os.listdir(parentparDIR)]
@@ -237,7 +236,7 @@ def main(point, parDIR):
   return([point[1], point[2], ann_ero, ann_swe, ann_ndays, ann_consec, ann_pet])
 
 
-#pkill -9 python if VS code closes
+
 if __name__ == '__main__':
 
   for pdir in parFolders:
