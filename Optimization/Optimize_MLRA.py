@@ -17,8 +17,8 @@ def evaluate_partition(partition_dict, overlap_matrix, total_valid_pixels, clust
     metrics = []
     total_cnr_sum = 0
     
-    # 6 Abstract Groups for MLRAs
-    for group_id in range(6):
+    # 5 Abstract Groups for MLRAs (Methodological Parity with ER3)
+    for group_id in range(5):
         group_mlra_ids = [m_id for m_id, g in partition_dict.items() if g == group_id]
         group_elc_area = overlap_matrix[group_mlra_ids].sum().sum() if group_mlra_ids else 0
         outside_total_area = total_valid_pixels - group_elc_area
@@ -75,35 +75,44 @@ def evaluate_partition(partition_dict, overlap_matrix, total_valid_pixels, clust
             'Case-Normalized Rate': round(cnr, 4)
         })
         
-    mean_cnr = total_cnr_sum / 6
+    mean_cnr = total_cnr_sum / 5
     return mean_cnr, metrics
 
 def run_hill_climb(args):
-    seed, iterations, overlap_matrix, total_valid_pixels, cluster_areas, orig_to_temp_map, mlra_list, int_to_mlra = args
+    seed, iterations, overlap_matrix, total_valid_pixels, cluster_areas, orig_to_temp_map, mlra_list, int_to_mlra, mlra_areas, min_area = args
     random.seed(seed)
 
-    current_partition = {}
-    group_counts = {g: 0 for g in range(6)}
-    available_mlras = list(mlra_list)
-    random.shuffle(available_mlras)
-    
-    # FORCE 100% COVERAGE & MINIMUM 2 MLRAs PER GROUP
-    # Step 1: Guarantee every group gets exactly 2 MLRAs to start
-    for g in range(6):
-        for _ in range(2):
-            if available_mlras:
-                mlra = available_mlras.pop()
-                current_partition[mlra] = g
-                group_counts[g] += 1
+    # FORCE 100% COVERAGE, MIN 2 MLRAs, AND MINIMUM 7% AREA PER GROUP
+    valid_start = False
+    while not valid_start:
+        current_partition = {}
+        group_counts = {g: 0 for g in range(5)}
+        group_areas = {g: 0 for g in range(5)}
+        available_mlras = list(mlra_list)
+        random.shuffle(available_mlras)
+        
+        # Step 1: Guarantee every group gets exactly 2 MLRAs to start
+        for g in range(5):
+            for _ in range(2):
+                if available_mlras:
+                    mlra = available_mlras.pop()
+                    current_partition[mlra] = g
+                    group_counts[g] += 1
+                    group_areas[g] += mlra_areas[mlra]
 
-    # Step 2: Distribute the remainder, enforcing the Max 12 limit
-    for mlra in available_mlras:
-        valid_groups = [g for g in range(6) if group_counts[g] < 12]
-        if not valid_groups:
-            break
-        chosen_g = random.choice(valid_groups)
-        current_partition[mlra] = chosen_g
-        group_counts[chosen_g] += 1
+        # Step 2: Distribute the remainder, enforcing the Max 12 limit
+        for mlra in available_mlras:
+            valid_groups = [g for g in range(5) if group_counts[g] < 12]
+            if not valid_groups:
+                break
+            chosen_g = random.choice(valid_groups)
+            current_partition[mlra] = chosen_g
+            group_counts[chosen_g] += 1
+            group_areas[chosen_g] += mlra_areas[mlra]
+            
+        # Verify all groups meet the 7% minimum area threshold
+        if len(current_partition) == len(mlra_list) and all(area >= min_area for area in group_areas.values()):
+            valid_start = True
 
     current_score, current_metrics = evaluate_partition(
         current_partition, overlap_matrix, total_valid_pixels, cluster_areas, orig_to_temp_map, int_to_mlra
@@ -120,10 +129,15 @@ def run_hill_climb(args):
         # ENFORCE MINIMUM CONSTRAINT: Cannot move if old_group will drop below 2 MLRAs
         if list(current_partition.values()).count(old_group) <= 2:
             continue
+            
+        # ENFORCE MINIMUM AREA CONSTRAINT: Cannot move if old_group drops below 7% study area
+        current_old_group_area = sum(mlra_areas[m] for m, g in current_partition.items() if g == old_group)
+        if (current_old_group_area - mlra_areas[mlra_to_mutate]) < min_area:
+            continue
         
         # ENFORCE MAXIMUM CONSTRAINT: Target group must have < 12 MLRAs
         valid_new_groups = []
-        for g in range(6):
+        for g in range(5):
             if g != old_group and list(current_partition.values()).count(g) < 12:
                 valid_new_groups.append(g)
                 
@@ -198,19 +212,24 @@ if __name__ == '__main__':
     total_valid_pixels = len(iso_flat)
     cluster_areas = pd.Series(iso_flat).value_counts()
     mlra_list = list(overlap_matrix.columns)
+    
+    # Calculate base pixel areas for area constraint logic
+    mlra_areas = overlap_matrix.sum(axis=0).to_dict()
+    min_area_threshold = total_valid_pixels * 0.1
 
     # =====================================================================
     # 3. Parallel Execution Setup
     # =====================================================================
-    parallel_restarts = 50     
+    parallel_restarts = 48     
     iterations_per_climb = 50000 
     available_cores = multiprocessing.cpu_count()
     
-    print(f"\nInitializing FORCED 100% COVERAGE MLRA Optimization (Min 2/Max 12 MLRAs | Min 2/Max 12 Clusters)...")
+    print(f"\nInitializing FORCED 100% COVERAGE MLRA Optimization...")
+    print(f"Constraints: 5 Groups | Min 2/Max 12 MLRAs | Min 2/Max 12 Clusters | Min 7% Area")
     print(f"Deploying {parallel_restarts} independent workers across {available_cores} CPU cores.")
 
     worker_args = [
-        (seed, iterations_per_climb, overlap_matrix, total_valid_pixels, cluster_areas, orig_to_temp_map, mlra_list, int_to_mlra)
+        (seed, iterations_per_climb, overlap_matrix, total_valid_pixels, cluster_areas, orig_to_temp_map, mlra_list, int_to_mlra, mlra_areas, min_area_threshold)
         for seed in range(parallel_restarts)
     ]
 
@@ -233,8 +252,7 @@ if __name__ == '__main__':
     # =====================================================================
     metrics_df = pd.DataFrame(global_best_metrics)
 
-    print("\nTable: Fully Unsupervised Global Optimum for MLRAs (Min 2 & Max 12 Constraints Forced)")
+    print("\nTable: Fully Unsupervised Global Optimum for MLRAs (5 Groups | 10% Area Floor)")
     print("="*140)
     print(metrics_df.to_string(index=False))
     print(f"\nAbsolute Global Mean Case-Normalized Rate Found: {round(global_best_score, 4)}")
-    
