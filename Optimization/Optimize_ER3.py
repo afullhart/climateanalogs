@@ -215,7 +215,6 @@ if __name__ == '__main__':
     global_best_score = 0
     global_best_metrics = None
 
-    # Implement tqdm progress bar with as_completed
     with ProcessPoolExecutor(max_workers=available_cores) as executor:
         futures = [executor.submit(run_hill_climb, arg) for arg in worker_args]
         
@@ -231,7 +230,7 @@ if __name__ == '__main__':
     # =====================================================================
     metrics_df = pd.DataFrame(global_best_metrics)
 
-    print("\nTable: Fully Unsupervised Global Optimum for ER3s (Min 2/Max 7 Constraints Forced)")
+    print("\nTable: Fully Unsupervised Global Optimum for ER3s (Forced 100% Coverage)")
     print("="*140)
     print(metrics_df.to_string(index=False))
     print(f"\nAbsolute Global Mean Case-Normalized Rate Found: {round(global_best_score, 4)}")
