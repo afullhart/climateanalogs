@@ -71,6 +71,8 @@ def evaluate_partition(partition_dict, overlap_matrix, total_valid_pixels, clust
             'Abstract Group': f"Group {group_id + 1}",
             'Optimized Clusters': str(temp_orders),
             'Optimized MLRAs': str(original_mlra_strings),
+            'True Positive Rate': round(tpr, 4),
+            'True Negative Rate': round(tnr, 4),
             'Prediction Accuracy': round(accuracy, 4),
             'Case-Normalized Rate': round(cnr, 4)
         })
