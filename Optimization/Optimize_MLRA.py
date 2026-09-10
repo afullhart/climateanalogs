@@ -112,7 +112,7 @@ def run_hill_climb(args):
             group_counts[chosen_g] += 1
             group_areas[chosen_g] += mlra_areas[mlra]
             
-        # Verify all groups meet the 7% minimum area threshold
+        # Verify all groups meet the 10% minimum area threshold
         if len(current_partition) == len(mlra_list) and all(area >= min_area for area in group_areas.values()):
             valid_start = True
 
@@ -132,7 +132,7 @@ def run_hill_climb(args):
         if list(current_partition.values()).count(old_group) <= 2:
             continue
             
-        # ENFORCE MINIMUM AREA CONSTRAINT: Cannot move if old_group drops below 7% study area
+        # ENFORCE MINIMUM AREA CONSTRAINT: Cannot move if old_group drops below 10% study area
         current_old_group_area = sum(mlra_areas[m] for m, g in current_partition.items() if g == old_group)
         if (current_old_group_area - mlra_areas[mlra_to_mutate]) < min_area:
             continue
@@ -227,7 +227,7 @@ if __name__ == '__main__':
     available_cores = multiprocessing.cpu_count()
     
     print(f"\nInitializing FORCED 100% COVERAGE MLRA Optimization...")
-    print(f"Constraints: 5 Groups | Min 2/Max 12 MLRAs | Min 2/Max 12 Clusters | Min 7% Area")
+    print(f"Constraints: 5 Groups | Min 2/Max 12 MLRAs | Min 2/Max 12 Clusters | Min 10% Area")
     print(f"Deploying {parallel_restarts} independent workers across {available_cores} CPU cores.")
 
     worker_args = [
