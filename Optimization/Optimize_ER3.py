@@ -218,8 +218,8 @@ if __name__ == '__main__':
     # =====================================================================
     # 3. Parallel Execution Setup
     # =====================================================================
-    parallel_restarts = 48     
-    iterations_per_climb = 50000 
+    parallel_restarts = 192    
+    iterations_per_climb = 250000 
     available_cores = multiprocessing.cpu_count()
     
     print(f"\nInitializing FORCED 100% COVERAGE ER3 Optimization...")
